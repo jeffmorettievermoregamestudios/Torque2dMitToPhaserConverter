@@ -1,0 +1,210 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{0E86FADE-E897-4BE1-A8BF-465C4A0ABF14}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Torque2dMitToPhaserConverter</RootNamespace>
+    <AssemblyName>Torque2dMitToPhaserConverter</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AbstractSyntaxTreeClasses\AddOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BasicCodeToken.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BitwiseAndOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BitwiseComplementOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BitwiseLeftShiftOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BitwiseOrOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BitwiseRightShiftOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BitwiseXorOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanAndOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanEqualsOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanFalseValue.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanGreaterThanOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanGreaterThanOrEqualToOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanLessThanOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanLessThanOrEqualToOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanNotEqualsOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanNotOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanOrOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BooleanTrueValue.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\BreakKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\CaseKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ClassMethod.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ClosedCurlyBracket.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ClosedRoundBracket.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\CodeFile.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\Colon.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\Comma.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\CommentBlockBegin.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\CommentBlockEnd.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ContinueKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\CssFontFaceStyle.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\CssFontFaceStylesTemplate.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\DefaultKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\DivideOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\Dot.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ElseIfKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ElseKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\EqualsOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ForKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\GlobalVariable.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\IfKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ImageAsset.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\LocalVariable.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ModulusOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\MultiplyOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\NewLineCharacter.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\NewOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\NumericValue.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\OpenCurlyBracket.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\OpenRoundBracket.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\PhaserAsset.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\PhaserClassHierarchyObj.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\PhaserObjectType.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\CodeBlock.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\FunctionDeclaration.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\FunctionParameter.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\Main.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\PhaserProjectConfig.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\PostDecrementOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\PostIncrementOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\ReturnKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\InputRules.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\Semicolon.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\Variable.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\WhitespaceCharacter.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\SingleLineComment.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\SpritesheetAsset.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\StringConcatBasic.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\StringConcatNewline.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\StringConcatSpace.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\StringConcatTab.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\StringEqualOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\StringNotEqualOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\StringValue.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\SubtractOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\SwitchKeyword.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\TakeCodeBlockAsIs.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\WhileKeyword.cs" />
+    <Compile Include="Convert.cs" />
+    <Compile Include="FormPleaseWait.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormPleaseWait.Designer.cs">
+      <DependentUpon>FormPleaseWait.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormTorque2dToPhaserConverter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTorque2dToPhaserConverter.Designer.cs">
+      <DependentUpon>FormTorque2dToPhaserConverter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GlobalVars.cs" />
+    <Compile Include="LocalVariablesTreeNode.cs" />
+    <Compile Include="PhaserAssetLibrary.cs" />
+    <Compile Include="PhaserAssetRepo.cs" />
+    <Compile Include="PhaserClass.cs" />
+    <Compile Include="PhaserCodeRepo.cs" />
+    <Compile Include="PhaserConstants.cs" />
+    <Compile Include="Torque2dConstants.cs" />
+    <Compile Include="Torque2dModuleDatabase.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dAnimationAsset.cs" />
+    <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dAsset.cs" />
+    <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dAssetLibrary.cs" />
+    <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dFontAsset.cs" />
+    <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dImageAsset.cs" />
+    <Compile Include="Torque2dScenes\Torque2dScene.cs" />
+    <Compile Include="Torque2dToPhaserConverterFunctionLibrary.cs" />
+    <Compile Include="Utils\StringUtils.cs" />
+    <EmbeddedResource Include="FormPleaseWait.resx">
+      <DependentUpon>FormPleaseWait.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTorque2dToPhaserConverter.resx">
+      <DependentUpon>FormTorque2dToPhaserConverter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Templates\MathConvertUtil.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\SceneBaseClass.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\SceneUtil.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\SpriteBaseClass.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\StubProject.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\JavascriptUtil.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

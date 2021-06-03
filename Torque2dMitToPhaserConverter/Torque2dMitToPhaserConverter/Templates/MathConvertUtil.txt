@@ -1,0 +1,28 @@
+﻿var MathConvertUtil = {
+	
+	torque2dCameraSizeWidth : **{TORQUE_2D_CAMERA_SIZE_WIDTH}**,
+	torque2dCameraSizeHeight : **{TORQUE_2D_CAMERA_SIZE_HEIGHT}**,
+
+	phaserProjectWidth :  **{PHASER_PROJECT_WIDTH}**,
+	phaserProjectHeight :  **{PHASER_PROJECT_HEIGHT}**,
+
+	convertToPhaserX : function (t2dX) {
+
+		return (t2dX + (torque2dCameraSizeWidth / 2)) * (this.phaserProjectWidth / this.torque2dCameraSizeWidth);
+	},
+
+	convertToPhaserY : function (t2dY) {
+
+		return (t2dY + (torque2dCameraSizeHeight / 2)) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
+	},
+
+	convertToPhaserWidth : function (t2dWidth) {
+		
+		return (t2dWidth) * (this.phaserProjectWidth / this.torque2dCameraSizeWidth);
+	},
+
+	convertToPhaserHeight : function (t2dHeight) {
+		
+		return (t2dHeight) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
+	}
+}

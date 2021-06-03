@@ -1,0 +1,9 @@
+﻿async function startScene(sceneClassName)
+{
+	game.scene.start(sceneClassName);
+
+	while (game.scene.isProcessing)
+	{
+		await resolveAfterXMilliseconds(200);
+	}
+}

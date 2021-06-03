@@ -1,0 +1,17 @@
+﻿class SceneBaseClass extends Phaser.Scene {
+
+constructor (config)
+{
+	this.enabled = false;
+    super(config);
+}
+
+update (time, delta)
+{
+	if (this.enabled)
+	{
+		super.update(time, delta)
+	}
+}
+
+}
