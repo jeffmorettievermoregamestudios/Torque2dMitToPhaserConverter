@@ -1,5 +1,7 @@
 # Torque2dMitToPhaserConverter
 
+Current Version:  v0.0.1
+
 The following guide/tips have been taken directly from http://www.torque2dmittophaserconverter.com/tips.html
 
 <h3><b>TIPS ON USING THE TORQUE2D MIT TO PHASER CONVERTER</b></h3>
