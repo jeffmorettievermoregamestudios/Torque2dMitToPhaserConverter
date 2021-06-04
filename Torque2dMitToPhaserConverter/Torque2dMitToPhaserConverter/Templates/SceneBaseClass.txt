@@ -2,8 +2,8 @@
 
 constructor (config)
 {
-	this.enabled = false;
     super(config);
+	this.enabled = false;
 }
 
 update (time, delta)
