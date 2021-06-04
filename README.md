@@ -1,6 +1,6 @@
 # Torque2dMitToPhaserConverter
 
-Current Version:  v0.0.2
+Current Version:  v0.0.3
 
 The following guide/tips have been taken directly from http://www.torque2dmittophaserconverter.com/tips.html
 
