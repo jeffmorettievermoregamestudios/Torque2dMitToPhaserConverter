@@ -93,7 +93,7 @@ namespace Torque2dMitToPhaserConverter
             Process2ndPassForLocalVariableSprites();
             Process2ndPassForGlobalVariableSprites();
 
-            // Generates Code Files from templates (ie SceneUtil, JavascriptUtil, SpriteBaseClass, etc)
+            // Generates Code Files from templates (ie JavascriptUtil, SpriteBaseClass, etc)
             GenerateCodeFilesFromTemplates();
 
             // 4) Process classes/methods in torquescript files.  Will also remove the class methods etc from the object 
@@ -1707,9 +1707,6 @@ namespace Torque2dMitToPhaserConverter
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "SceneBaseClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SceneBaseClass.txt"));
 
-            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserUtilFolder, "SceneUtil.js"),
-                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SceneUtil.txt"));
-
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "SpriteBaseClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SpriteBaseClass.txt"));
         }
@@ -1764,7 +1761,11 @@ namespace Torque2dMitToPhaserConverter
                             {
                                 newCodeFile.Contents.InsertRange(lastNewlineMarker, new List<CodeBlock>
                                 {
-                                    new BasicCodeToken { Value = "startScene" },
+                                    new BasicCodeToken { Value = "game" },
+                                    new Dot(),
+                                    new BasicCodeToken { Value = "scene", DoNotConvertVariable = true },
+                                    new Dot(),
+                                    new BasicCodeToken { Value = "start" },
                                     new OpenRoundBracket(),
                                     new StringValue { Val = "'" + matchingSceneClass.ClassName + "'" },                                   
                                     new ClosedRoundBracket(),
@@ -1791,7 +1792,7 @@ namespace Torque2dMitToPhaserConverter
                             newCodeFile.Contents.Add(new Dot());
                             newCodeFile.Contents.Add(new BasicCodeToken { Value = "getScene" });
                             newCodeFile.Contents.Add(new OpenRoundBracket());
-                            newCodeFile.Contents.Add(new StringValue { Val = "'" + matchingSceneClass .ClassName + "'" });
+                            newCodeFile.Contents.Add(new StringValue { Val = "'" + matchingSceneClass.ClassName + "'" });
                             newCodeFile.Contents.Add(new ClosedRoundBracket());
 
                             newCodeFile.Contents.Add(codeFile.Contents[idx]);

@@ -11,15 +11,18 @@
         type: **{PHASER_PROJECT_TYPE}**,
         width: **{PHASER_PROJECT_WIDTH}**,
         height: **{PHASER_PROJECT_HEIGHT}**,
-		scene: **{PHASER_SCENES}**
+		scene: **{PHASER_SCENES}**,
+        callbacks: {
+			postBoot: function(game) {
+				**{MAIN_MODULE_CREATE_FUNCTION_CALL}**
+			}
+		}
     };
 
     var game = new Phaser.Game(config);
 
 	**{INIT_CODE}**
 
-	**{MAIN_MODULE_CREATE_FUNCTION_CALL}**
-	
     </script>
 
 </body>

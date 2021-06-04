@@ -58,7 +58,6 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/JavascriptUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/MathConvertUtil.js'></script>\n";
-            result += $"<script src='{GlobalVars.PhaserUtilFolder}/SceneUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserGlobalVarsFolder}/{GlobalVars.PhaserGlobalVarsFilename}'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SpriteBaseClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SceneBaseClass.js'></script>\n";

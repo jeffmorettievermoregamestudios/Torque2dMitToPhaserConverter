@@ -8,12 +8,12 @@
 
 	convertToPhaserX : function (t2dX) {
 
-		return (t2dX + (torque2dCameraSizeWidth / 2)) * (this.phaserProjectWidth / this.torque2dCameraSizeWidth);
+		return (t2dX + (this.torque2dCameraSizeWidth / 2)) * (this.phaserProjectWidth / this.torque2dCameraSizeWidth);
 	},
 
 	convertToPhaserY : function (t2dY) {
 
-		return (t2dY + (torque2dCameraSizeHeight / 2)) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
+		return (t2dY + (this.torque2dCameraSizeHeight / 2)) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
 	},
 
 	convertToPhaserWidth : function (t2dWidth) {

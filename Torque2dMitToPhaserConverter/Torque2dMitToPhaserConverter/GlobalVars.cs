@@ -11,7 +11,7 @@ namespace Torque2dMitToPhaserConverter
 {
     public static class GlobalVars
     {
-        public static bool IsProcessingConversion;
+        public static bool IsProcessingConversion { get; set; }
 
         public static string Torque2dProjectModulesFolder { get; set; }
         public static string PhaserProjectOutputFolder { get; set; }
