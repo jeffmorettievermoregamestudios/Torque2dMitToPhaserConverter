@@ -12,7 +12,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
         // might be a float, or perhaps does not have a decimal and thus is an int.  Also could be
         // exponential number (TODO?) etc
         //
-        // Will return 'as is' for now, but could consider improving...
+        // Then again....for now could just return 'as is' and it theoretically would be fine :)
         public string NumberAsString { get; set; }
 
         public override string ConvertToCode()

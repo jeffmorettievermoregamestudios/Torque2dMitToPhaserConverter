@@ -75,6 +75,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
             return Value;
 
             // TODO: use .setTexture to assign spritesheet to a sprite (ie for Torque2d .Animation)
+            // NOTE: can also use .setTexture to assign Torque2d .Image
         }
     }
 }

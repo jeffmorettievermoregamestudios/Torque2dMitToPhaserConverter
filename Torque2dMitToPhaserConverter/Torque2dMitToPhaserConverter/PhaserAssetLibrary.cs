@@ -14,14 +14,13 @@ namespace Torque2dMitToPhaserConverter
         {
             GlobalVars.PhaserAssetRepo = new PhaserAssetRepo();
             GlobalVars.PhaserAssetRepo.PhaserAssetList = GenerateCodeForAssets();
-            GlobalVars.PhaserAssetRepo.PhaserCssFontFaceStyleList = GenerateCodeForCssFontFaceStyles();
+            //GlobalVars.PhaserAssetRepo.PhaserCssFontFaceStyleList = GenerateCodeForCssFontFaceStyles();
         }
 
         public static List<PhaserAsset> GenerateCodeForAssets()
         {
             var result = new List<PhaserAsset>();
 
-            // NOTE: Will 'not' be generating code from CreateTorque2dFontAssets here.  Done in GenerateCodeForCssFontFaceStyles
             foreach (var torque2dAsset in GlobalVars.Torque2dModuleDatabase.Torque2dAssetList)
             {
                 if (torque2dAsset.GetType() == typeof(Torque2dImageAsset))
@@ -37,11 +36,17 @@ namespace Torque2dMitToPhaserConverter
                         result.Add(GenerateImageAsset(t2dImageAsset));
                     }
                 }
+
+                if (torque2dAsset.GetType() == typeof(Torque2dFontAsset))
+                {
+                    result.Add(GenerateBitmapFontAsset((Torque2dFontAsset)torque2dAsset));
+                }
             }
 
             return result;
         }
 
+        // NOTE TO DEVELOPERS: Not currently used by Torque2dMitToPhaserConverter
         public static List<CssFontFaceStyle> GenerateCodeForCssFontFaceStyles()
         {
             var result = new List<CssFontFaceStyle>();
@@ -99,8 +104,11 @@ namespace Torque2dMitToPhaserConverter
             return result;
         }
 
+        // NOTE TO DEVELOPERS: Not currently used by Torque2dMitToPhaserConverter
         public static CssFontFaceStyle GenerateCssFontFaceStyle(Torque2dFontAsset torque2dFontAsset)
         {
+            //var resourceUrl = GetResourceUrl(torque2dFontAsset);
+
             var filename = torque2dFontAsset.AssetFile.Name.Replace(torque2dFontAsset.AssetFile.Extension, ".ttf");
             var resourceUrl = "assets" + torque2dFontAsset.AssetFile.DirectoryName
                 .Replace(GlobalVars.Torque2dAssetsFolder.FullName, "")
@@ -111,6 +119,19 @@ namespace Torque2dMitToPhaserConverter
             {
                 Name = torque2dFontAsset.Name,
                 ResourceUrl = resourceUrl
+            };
+
+            return result;
+        }
+
+        public static BitmapFontAsset GenerateBitmapFontAsset(Torque2dFontAsset torque2dFontAsset)
+        {
+            var resourceUrl = GetResourceUrl(torque2dFontAsset);
+
+            var result = new BitmapFontAsset()
+            {
+                AssetKey = torque2dFontAsset.Name,
+                ResourceUrl = resourceUrl,
             };
 
             return result;

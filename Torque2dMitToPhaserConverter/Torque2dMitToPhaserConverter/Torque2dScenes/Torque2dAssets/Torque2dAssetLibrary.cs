@@ -23,7 +23,16 @@ namespace Torque2dMitToPhaserConverter.Torque2dScenes.Torque2dAssets
             GlobalVars.Torque2dModuleDatabase.Torque2dAssetList.Add(newImageAsset);
         }
 
-        // NOTE: Will use 'Custom Webfont's in Phaser IO for working with fonts
+        /*// NOTE: Will use 'Custom Webfont's in Phaser IO for working with fonts
+        public static void CreateTorque2dFontAsset(string assetName, string fontFile, FileInfo assetFile)
+        {
+            var newFontAsset = new Torque2dFontAsset();
+            newFontAsset.Name = assetName;
+            newFontAsset.AssetFile = new FileInfo(assetFile.DirectoryName + "\\" + fontFile);
+
+            GlobalVars.Torque2dModuleDatabase.Torque2dAssetList.Add(newFontAsset);
+        }*/
+
         public static void CreateTorque2dFontAsset(string assetName, string fontFile, FileInfo assetFile)
         {
             var newFontAsset = new Torque2dFontAsset();

@@ -1,7 +1,11 @@
-﻿function resolveAfterXMilliseconds(x) {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve();
-    }, x);
-  });
+﻿var JavascriptUtil = {
+
+	resolveAfterXMilliseconds : function(x) {
+	  return new Promise(resolve => {
+		setTimeout(() => {
+		  resolve();
+		}, x);
+	  });
+	}
+
 }

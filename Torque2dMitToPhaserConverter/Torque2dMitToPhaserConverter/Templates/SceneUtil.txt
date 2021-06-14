@@ -1,0 +1,15 @@
+﻿var SceneUtil = {
+
+	runScene : async function(sceneKey, callback)
+	{
+		game.scene.run(sceneKey);
+	
+		while (!game.scene.isActive(sceneKey))
+		{
+			await JavascriptUtil.resolveAfterXMilliseconds(100);
+		}
+	
+		callback();
+	}
+
+}

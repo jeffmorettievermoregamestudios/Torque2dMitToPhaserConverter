@@ -29,7 +29,6 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
             var currentToken = new List<char>();
             var currentTokenType = typeof(CodeBlock);
 
-
             for (charIndex = 0; charIndex < inputCodeLine.Length; charIndex++)
             {
                 if (currentlyIsAStringValueToken)
@@ -364,7 +363,6 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
                 }
                 else if ((inputCodeLine.Length - charIndex) > 1 && inputCodeLine[charIndex] == '/' && inputCodeLine[charIndex + 1] == '/')
                 {
-                    // TODO: make comment single line codeblock.  Will extend as far as the current line
                     resultList = GenerateToken(currentToken, currentTokenType, resultList); // generates previous token, if applicable
 
                     currentToken = inputCodeLine.Substring(charIndex).ToList();
@@ -378,7 +376,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
                     break;
                 }
                 else if ((inputCodeLine.Length - charIndex) > 1 && inputCodeLine[charIndex] == '/' && inputCodeLine[charIndex + 1] == '*')
-                {
+                {  
                     resultList = GenerateToken(currentToken, currentTokenType, resultList); // generates previous token, if applicable
 
                     currentToken = new List<char>();
@@ -1930,6 +1928,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
                     continue;
                 }
 
+                // TODO: Must do each individually since I also have to downcast as well
                 if (resultList[idx].GetType() == typeof(LocalVariable) || resultList[idx].GetType() == typeof(GlobalVariable) || resultList[idx].GetType() == typeof(BasicCodeToken))
                 {
                     if (torque2dObjectTypeAsString.ToLower() == Torque2dConstants.SceneClassName.ToLower())
@@ -1963,6 +1962,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 
                 while (idx >= 0)
                 {
+                    // TODO: Must do each individually since I also have to downcast as well
                     if (currentCompletedCodeBlockList[idx].GetType() == typeof(LocalVariable) || currentCompletedCodeBlockList[idx].GetType() == typeof(GlobalVariable) || currentCompletedCodeBlockList[idx].GetType() == typeof(BasicCodeToken))
                     {
                         if (torque2dObjectTypeAsString.ToLower() == Torque2dConstants.SceneClassName.ToLower())

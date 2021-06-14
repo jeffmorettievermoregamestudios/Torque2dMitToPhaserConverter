@@ -36,7 +36,8 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 
             mainCodeString = mainCodeString.Replace("**{PHASER_SCENES}**", sceneListString);
 
-            mainCodeString = mainCodeString.Replace("**{INIT_CODE}**", (new CssFontFaceStylesTemplate()).ConvertToCode());
+            //mainCodeString = mainCodeString.Replace("**{INIT_CODE}**", (new CssFontFaceStylesTemplate()).ConvertToCode());
+            mainCodeString = mainCodeString.Replace("**{INIT_CODE}**", "");
 
             var mainModuleCreateFunctionCallAsString = "let " + GlobalVars.StartingPointVariableName + " = new " + GlobalVars.Torque2dProjectModuleName + "();\n";
             mainModuleCreateFunctionCallAsString +=
@@ -58,9 +59,11 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/JavascriptUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/MathConvertUtil.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserUtilFolder}/SceneUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserGlobalVarsFolder}/{GlobalVars.PhaserGlobalVarsFilename}'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SpriteBaseClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SceneBaseClass.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserClassesFolder}/BitmapTextBaseClass.js'></script>\n";
 
             foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
             {

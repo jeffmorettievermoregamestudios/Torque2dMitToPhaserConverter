@@ -1,6 +1,17 @@
 # Torque2dMitToPhaserConverter
 
-Current Version:  v0.0.2
+Current Version:  v0.0.4
+
+CHANGELOG:
+
+v0.0.4
+- stability fixes for loading/starting a scene and loading/displaying sprites
+- 'alpha' support for TextSprite/BitmapText now available
+- bugfix that was causing an 'assets' folder to be created in the root folder of the drive when
+converting a project
+
+
+
 
 The following guide/tips have been taken directly from http://www.torque2dmittophaserconverter.com/tips.html
 

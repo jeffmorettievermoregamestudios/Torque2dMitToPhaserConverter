@@ -13,6 +13,10 @@ namespace Torque2dMitToPhaserConverter
         public const string SpriteClassName = "Phaser.GameObjects.Sprite";
         public const string SpriteBaseClassName = "SpriteBaseClass";
         public const string BitmapTextClassName = "Phaser.GameObjects.BitmapText";
+        public const string BitmapTextBaseClassName = "BitmapTextBaseClass";
         public const string ObjectClassName = "Object";
+
+        public const string T2dToPhaserRunSceneTodoMarker = "T2DTOPHASER_RUNSCENE_TODO";
+        public const string CallbackNameSuffix = "_T2DTOPHASER_Callback";
     }
 }

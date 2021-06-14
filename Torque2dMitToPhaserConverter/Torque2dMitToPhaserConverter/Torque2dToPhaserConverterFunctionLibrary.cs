@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
@@ -14,7 +14,7 @@ using Torque2dMitToPhaserConverter.Torque2dScenes.Torque2dAssets;
 namespace Torque2dMitToPhaserConverter
 {
     public static class Torque2dToPhaserConverterFunctionLibrary
-    {     
+    {
         public static void ConvertProject()
         {
             // first check to make sure entered folder paths are created
@@ -65,6 +65,9 @@ namespace Torque2dMitToPhaserConverter
             ProcessAllTorque2dTorquescriptFiles();
 
             // 3) Perform a 2nd pass over the Code Files and process again as necessary
+            // JLM - Nov 11 Continue here
+            // JLM - ie to change a new SceneGraph() { UpdateCallback = false } to have the curly brackets removed and place stuff 
+            // like this.UpdateCallback = false instead following the new call
             bool finished2ndPasses = false;
 
             while (!finished2ndPasses)
@@ -96,7 +99,18 @@ namespace Torque2dMitToPhaserConverter
             // Generates Code Files from templates (ie JavascriptUtil, SpriteBaseClass, etc)
             GenerateCodeFilesFromTemplates();
 
-            // 4) Process classes/methods in torquescript files.  Will also remove the class methods etc from the object 
+            // Generate the Phaser Class Hierarchy (so we know how the class hierarchy & inheritance structure looks)
+            ProcessPhaserClassHierarchy();
+
+            // 4) Compile the list of Scenes created within our game (will need this list for later, when generating the index.html file)
+            //    Also does some more Scene Processing
+            CompileListOfScenesCreatedInOurGameAndDoMoreSceneProcessing();
+
+            // performs a 2nd pass over the whole codebase, delaying the execution of code when starting a new scene and making a callback
+            // once the scene is 'active', and thus resuming the code/execution from there
+            Process2ndPassForWaitForSceneIsActiveCallbacks();
+
+            // 5) Process classes/methods in torquescript files.  Will also remove the class methods etc from the object 
             //    model (so they are not generated later when generating the converted torquescript files)
             ProcessTorque2dTorquescriptFilesClassesAndMethods();
 
@@ -109,16 +123,13 @@ namespace Torque2dMitToPhaserConverter
             // generate the actual javascript files for the Phaser classes
             GeneratePhaserClassJavascriptFiles();
 
-            // 5) Generate a GlobalVars script file, to store all the global variables in our Phaser game (ie global variables converted from T2D)
+            // 6) Generate a GlobalVars script file, to store all the global variables in our Phaser game (ie global variables converted from T2D)
             GenerateGlobalVarsJavascriptFile();
 
             // 7) Generate Preload Assets file
             GeneratePreloadAssetsFile();
 
-            // 8) Compile the list of Scenes created within our game (will need this list for later, when generating the index.html file)
-            CompileListOfScenesCreatedInOurGame();
-
-            // ) Will now parse module Main and convert to Phaser code.  
+            // 8) Will now parse module Main and convert to Phaser code.  
             var indexHtmlObj = CreateStubProject();
 
             // 9) Write index.html to file system
@@ -167,7 +178,7 @@ namespace Torque2dMitToPhaserConverter
 
             return phaserProjectConfigNode;
         }
-       
+
         public static string GetModuleNameFromAppCoreMain(string appCoreMainCsAsString)
         {
             string literalToSearch = "ModuleDatabase.loadExplicit(".ToUpper();
@@ -230,6 +241,8 @@ namespace Torque2dMitToPhaserConverter
 
         public static void ParseTorque2dAssetFile(FileInfo assetFile)
         {
+            // Maybe create a collection of assets (ie in memory, ie ImageAssetsCollection, 'Animation'Assets collection)
+            // and also parse and store/write assets to file system/etc on the fly
             XDocument assetTaml = XDocument.Load(assetFile.FullName);
 
             var assetRootNode = assetTaml.Root;
@@ -283,6 +296,7 @@ namespace Torque2dMitToPhaserConverter
 
         public static void ProcessAllTorque2dTorquescriptFiles()
         {
+            // NOTE: Only handle files that have .cs file extension
             var rootModuleDirectory = new DirectoryInfo(GetModuleFolderPath());
 
             ProcessAllTorque2dTorquescriptFilesHelper(rootModuleDirectory);
@@ -290,7 +304,6 @@ namespace Torque2dMitToPhaserConverter
 
         public static void ProcessAllTorque2dTorquescriptFilesHelper(DirectoryInfo dir)
         {
-            // NOTE: Only handle files that have .cs file extension
             foreach (var torquescriptFile in dir.GetFiles("*.cs"))
             {
                 ProcessTorque2dTorquescriptFile(torquescriptFile);
@@ -324,9 +337,9 @@ namespace Torque2dMitToPhaserConverter
             GlobalVars.Torque2dModuleDatabase.CodeFileList.Add(codeFile);
         }
 
-        public static void ProcessTorque2dTorquescriptFilesClassesAndMethods()
+        private static void ProcessPhaserClassHierarchy()
         {
-            // will first iterate over all BasicCodeTokens, in order to determine the class hierarchy structure that we need
+            // will iterate over all BasicCodeTokens, in order to determine the class hierarchy structure that we need
             foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
             {
                 for (var i = 0; i < codeFile.Contents.Count; i++)
@@ -343,7 +356,10 @@ namespace Torque2dMitToPhaserConverter
                     }
                 }
             }
+        }
 
+        public static void ProcessTorque2dTorquescriptFilesClassesAndMethods()
+        {
             foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
             {
                 for (var i = 0; i < codeFile.Contents.Count; i++)
@@ -948,7 +964,7 @@ namespace Torque2dMitToPhaserConverter
 
                     if (phaserClassHierarchyObj.Parent.ClassName == PhaserConstants.SceneBaseClassName)
                     {
-                        // in this case, want to generate a 'constructor' for this class, which calls a super to Phaser.Scene
+                        // in this case, want to generate a 'constructor' for this class, which calls a super to SceneBaseClass (which in turn calls super to Phaser.Scene)
                         javascriptFileString += "constructor () {\n";
                         javascriptFileString += "super({ key: '" + phaserClass.ClassName + "', active: false });\n";
                         javascriptFileString += "}\n\n";
@@ -956,6 +972,14 @@ namespace Torque2dMitToPhaserConverter
                         javascriptFileString += "preload() {\n";
                         javascriptFileString += "// NOTE TO DEVELOPERS: will want to preload your assets here; can manually accomplish \n";
                         javascriptFileString += "//this by cut/paste from the preload.js file in the root output folder\n";
+                        javascriptFileString += "}\n\n";
+                    }
+
+                    if (phaserClassHierarchyObj.Parent.ClassName == PhaserConstants.BitmapTextBaseClassName)
+                    {
+                        // in this case, want to generate a 'constructor' for this class, which calls a super to BitmapTextBaseClass (which in turns calls super to Phaser.GameObjects.BitmapText)
+                        javascriptFileString += "constructor (scene, x, y, font) {\n";
+                        javascriptFileString += "super(scene, x, y, font);\n";
                         javascriptFileString += "}\n\n";
                     }
                 }
@@ -1466,7 +1490,7 @@ namespace Torque2dMitToPhaserConverter
             var newCodeFileList = new List<CodeFile>();
 
             foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
-            {                
+            {
                 var newCodeFile = new CodeFile
                 {
                     Filename = codeFile.Filename,
@@ -1588,12 +1612,18 @@ namespace Torque2dMitToPhaserConverter
             }
 
             GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
-        }        
+        }
 
         private static void CopyAssetFiles()
         {
-            var assetsFolder = GlobalVars.Torque2dAssetsFolder.FullName.Replace(GetModuleFolderPath(), "");
-            Directory.CreateDirectory(Path.Combine(GlobalVars.PhaserProjectOutputFolder, assetsFolder));
+            var assetsFolder = GlobalVars.Torque2dAssetsFolder.FullName.Replace(GetModuleFolderPath() + "\\", "");
+
+            var dir = Path.Combine(GlobalVars.PhaserProjectOutputFolder, assetsFolder);
+
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
 
             foreach (var phaserAsset in GlobalVars.PhaserAssetRepo.PhaserAssetList)
             {
@@ -1609,7 +1639,31 @@ namespace Torque2dMitToPhaserConverter
 
                     File.Copy(phaserAsset.Torque2dAssetFileReference.FullName, destinationFilePath, true);
                 }
-            }            
+                if (phaserAsset.GetType() == typeof(BitmapFontAsset))
+                {
+                    var baseResourceUrl = ((BitmapFontAsset)phaserAsset).ResourceUrl;
+                    var resourceFileWithPngExtension = baseResourceUrl.Substring(0, baseResourceUrl.LastIndexOf(".")) + "Font.png";
+                    var resourceFileWithXmlExtension = baseResourceUrl.Substring(0, baseResourceUrl.LastIndexOf(".")) + "Font.xml";
+
+                    var destinationFilePathForPng = Path.Combine(GlobalVars.PhaserProjectOutputFolder, resourceFileWithPngExtension.Replace('/', '\\'));
+                    var destinationFilePathForXml = Path.Combine(GlobalVars.PhaserProjectOutputFolder, resourceFileWithXmlExtension.Replace('/', '\\'));
+
+                    var destinationFolderPathForPng = Path.GetDirectoryName(destinationFilePathForPng);
+                    if (!Directory.Exists(destinationFolderPathForPng))
+                    {
+                        Directory.CreateDirectory(destinationFolderPathForPng);
+                    }
+
+                    var destinationFolderPathForXml = Path.GetDirectoryName(destinationFilePathForXml);
+                    if (!Directory.Exists(destinationFolderPathForXml))
+                    {
+                        Directory.CreateDirectory(destinationFolderPathForXml);
+                    }
+
+                    File.Create(destinationFilePathForPng).Close();
+                    File.Create(destinationFilePathForXml).Close();
+                }
+            }
         }
 
         private static void GenerateGlobalVarsJavascriptFile()
@@ -1651,7 +1705,7 @@ namespace Torque2dMitToPhaserConverter
                             {
                                 // found a Torque2dAssetName.  Remove the stringLiteralToCheck literal
                                 stringToken.Val = stringToken.Val.Replace(stringLiteralToCheck, "");
-                            }                            
+                            }
                         }
                     }
                 }
@@ -1673,7 +1727,10 @@ namespace Torque2dMitToPhaserConverter
             preloadFunction.Contents = functionContents;
             preloadFunction.CanWriteAsEmptyFunction = true;
 
-            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, "preload.js"), preloadFunction.ConvertToCode());
+            var preloadFunctionComment = "\n\n\n\n\n\n// NOTE: For Bitmap Fonts, you will want to generate the actual resource files yourself.\n";
+            preloadFunctionComment += "// Look at https://photonstorm.github.io/phaser3-docs/Phaser.GameObjects.BitmapText.html and read how \"To create a BitmapText data files\" for more info.\n\n";
+
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, "preload.js"), preloadFunctionComment + preloadFunction.ConvertToCode());
         }
 
         private static void GenerateCodeFilesFromTemplates()
@@ -1703,15 +1760,24 @@ namespace Torque2dMitToPhaserConverter
 
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserUtilFolder, "MathConvertUtil.js"), mathConvertUtilJsFile);
 
+            // SceneUtil.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserUtilFolder, "SceneUtil.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SceneUtil.txt"));
+
             // SceneBaseClass.js
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "SceneBaseClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SceneBaseClass.txt"));
 
+            // SpriteBaseClass.js
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "SpriteBaseClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SpriteBaseClass.txt"));
+
+            // BitmapTextBaseClass.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "BitmapTextBaseClass.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\BitmapTextBaseClass.txt"));
         }
 
-        private static void CompileListOfScenesCreatedInOurGame()
+        private static void CompileListOfScenesCreatedInOurGameAndDoMoreSceneProcessing()
         {
             var newCodeFileList = new List<CodeFile>();
 
@@ -1735,7 +1801,7 @@ namespace Torque2dMitToPhaserConverter
                         lastNewlineMarker = newCodeFile.Contents.Count;
                     }
                     else if (codeBlock.GetType() == typeof(NewOperator))
-                    {                        
+                    {
                         var idx = i + 1;
 
                         while (idx < codeFile.Contents.Count)
@@ -1743,7 +1809,7 @@ namespace Torque2dMitToPhaserConverter
                             if (codeFile.Contents[idx].GetType() == typeof(BasicCodeToken))
                             {
                                 break;
-                            }                            
+                            }
 
                             idx++;
                         }
@@ -1761,13 +1827,14 @@ namespace Torque2dMitToPhaserConverter
                             {
                                 newCodeFile.Contents.InsertRange(lastNewlineMarker, new List<CodeBlock>
                                 {
-                                    new BasicCodeToken { Value = "game" },
+                                    new BasicCodeToken { Value = "SceneUtil" },
                                     new Dot(),
-                                    new BasicCodeToken { Value = "scene", DoNotConvertVariable = true },
-                                    new Dot(),
-                                    new BasicCodeToken { Value = "start" },
+                                    new BasicCodeToken { Value = "runScene" },
                                     new OpenRoundBracket(),
-                                    new StringValue { Val = "'" + matchingSceneClass.ClassName + "'" },                                   
+                                    new StringValue { Val = "'" + matchingSceneClass.ClassName + "'" },
+                                    new Comma(),
+                                    new WhitespaceCharacter { WhitespaceChar = ' ' },
+                                    new BasicCodeToken { Value = PhaserConstants.T2dToPhaserRunSceneTodoMarker },
                                     new ClosedRoundBracket(),
                                     new Semicolon(),
                                     new NewLineCharacter()
@@ -1875,7 +1942,7 @@ namespace Torque2dMitToPhaserConverter
                                     // will add the 'var' keyword in this case.  Also will add this local variable to the LocalVariablesDiscovered
                                     newCodeFile.Contents.Add(new BasicCodeToken { Value = "var" });
                                     newCodeFile.Contents.Add(new WhitespaceCharacter { WhitespaceChar = ' ' });
-                                }   
+                                }
                             }
 
                             currentLocalVariablesNode.LocalVariablesDiscovered.Add((LocalVariable)codeBlock);
@@ -2052,7 +2119,7 @@ namespace Torque2dMitToPhaserConverter
                             newCodeFile.Contents.Add(codeBlock);
                             continue;
                         }
-                        
+
                         if (!currentLocalVariablesNode.ContainsLocalVariable((LocalVariable)codeBlock))
                         {
                             if (codeBlock.PhaserObjectType == PhaserObjectType.Sprite)
@@ -2653,6 +2720,168 @@ namespace Torque2dMitToPhaserConverter
                                     globalVariablesCollection.Add((GlobalVariable)codeBlock);
                                 }
                             }
+                        }
+                    }
+
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        private static void Process2ndPassForWaitForSceneIsActiveCallbacks()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                FunctionDeclaration currentFunction = null;
+                ClassMethod currentMethod = null;
+                var callbackName = "";
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(FunctionDeclaration))
+                    {
+                        currentFunction = (FunctionDeclaration)codeBlock;
+                        callbackName = currentFunction.Name + PhaserConstants.CallbackNameSuffix;
+                    }
+
+                    if (codeBlock.GetType() == typeof(ClassMethod))
+                    {
+                        currentMethod = (ClassMethod)codeBlock;
+                        callbackName = currentMethod.MethodName + PhaserConstants.CallbackNameSuffix;
+                    }
+
+                    if (codeBlock.GetType() == typeof(BasicCodeToken))
+                    {
+                        if (((BasicCodeToken)codeBlock).Value == PhaserConstants.T2dToPhaserRunSceneTodoMarker)
+                        {
+                            if (currentMethod != null)
+                            {
+                                newCodeFile.Contents.AddRange( new List<CodeBlock> {
+                                    new LocalVariable { Name = "%this" },
+                                    new Dot(),
+                                    new BasicCodeToken { Value = callbackName }
+                                });
+                            }
+                            else
+                            {
+                                newCodeFile.Contents.Add(new BasicCodeToken { Value = callbackName } );
+                            }
+
+                            for (i = i + 1; i < codeFile.Contents.Count; i++)
+                            {
+                                var codeBlock2 = codeFile.Contents[i];
+
+                                if (codeBlock2.GetType() == typeof(Semicolon))
+                                {
+                                    newCodeFile.Contents.Add(codeBlock2);
+                                    i++;
+
+                                    var callbackContents = new List<CodeBlock>();
+                                    var curlyBracketCount = 0;
+
+                                    for (var j = i; j < codeFile.Contents.Count; /* do not need to increment, since we keep removing a CodeBlock each iteration - ie codeFile.Contents.RemoveAt(j);*/)
+                                    {
+                                        var codeBlock3 = codeFile.Contents[j];
+                                        callbackContents.Add(codeBlock3);
+                                        codeFile.Contents.RemoveAt(j);
+
+                                        if (codeBlock3.GetType() == typeof(OpenCurlyBracket))
+                                        {
+                                            curlyBracketCount++;
+                                        }
+                                        if (codeBlock3.GetType() == typeof(ClosedCurlyBracket))
+                                        {
+                                            curlyBracketCount--;
+
+                                            if (curlyBracketCount < 0)
+                                            {
+                                                // can now append the callback to our current codeFile
+                                                if (currentMethod != null)
+                                                {
+                                                    codeFile.Contents.AddRange(new List<CodeBlock> {
+                                                        new NewLineCharacter(),
+                                                        new NewLineCharacter(),
+                                                        new ClassMethod { ClassName = currentMethod.ClassName, MethodName = callbackName },
+                                                        new OpenRoundBracket(),
+                                                        new ClosedRoundBracket(),
+                                                        new WhitespaceCharacter { WhitespaceChar = ' ' },
+                                                        new OpenCurlyBracket(),
+                                                        new NewLineCharacter(),
+                                                        new NewLineCharacter(),
+                                                    });
+
+                                                    codeFile.Contents.AddRange(callbackContents);
+                                                }
+                                                else
+                                                {
+                                                    codeFile.Contents.AddRange(new List<CodeBlock> {
+                                                        new NewLineCharacter(),
+                                                        new NewLineCharacter(),
+                                                        new FunctionDeclaration { Name = callbackName },
+                                                        new OpenRoundBracket(),
+                                                        new ClosedRoundBracket(),
+                                                        new WhitespaceCharacter { WhitespaceChar = ' ' },
+                                                        new OpenCurlyBracket(),
+                                                        new NewLineCharacter(),
+                                                        new NewLineCharacter(),
+                                                    });
+
+                                                    codeFile.Contents.AddRange(callbackContents);
+                                                }
+
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // add in comment to let ppl know that this resumes at the callback
+                                    var comment = new SingleLineComment();
+
+                                    if (currentMethod != null)
+                                    {
+                                        comment.CodeBlock = "// resumes at '" + callbackName + "' callback method";
+                                    }
+                                    else
+                                    {
+                                        comment.CodeBlock = "// resumes at '" + callbackName + "' callback function";
+                                    }
+
+                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                    {
+                                        new NewLineCharacter(),
+                                        new NewLineCharacter(),
+                                        comment,
+                                        new NewLineCharacter(),
+                                        new ClosedCurlyBracket()
+                                    });
+
+                                    currentFunction = null;
+                                    currentMethod = null;
+                                    callbackName = "";
+
+                                    i--;
+
+                                    break;
+                                }
+
+                                newCodeFile.Contents.Add(codeBlock2);
+                            }
+
+                            continue;
                         }
                     }
 

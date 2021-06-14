@@ -6,11 +6,11 @@ constructor (config)
 	this.enabled = false;
 }
 
-update (time, delta)
+update ()
 {
 	if (this.enabled)
 	{
-		super.update(time, delta)
+		super.update();
 	}
 }
 
