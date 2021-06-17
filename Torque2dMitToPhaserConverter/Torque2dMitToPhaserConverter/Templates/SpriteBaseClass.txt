@@ -17,7 +17,8 @@ setSize(width, height) {
 }
 
 setPosition(x, y) {
-	this.setOrigin(MathConvertUtil.convertToPhaserX(x), MathConvertUtil.convertToPhaserY(y));
+	this.x = MathConvertUtil.convertToPhaserX(x);
+	this.y = MathConvertUtil.convertToPhaserY(y);
 }
 
 }

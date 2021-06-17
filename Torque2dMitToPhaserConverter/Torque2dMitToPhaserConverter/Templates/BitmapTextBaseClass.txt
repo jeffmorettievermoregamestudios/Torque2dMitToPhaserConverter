@@ -12,11 +12,14 @@ getPosition() {
 }
 
 setSize(width, height) {
-	this.setDisplaySize(MathConvertUtil.convertToPhaserWidth(width), MathConvertUtil.convertToPhaserHeight(height));
+	//this.setDisplaySize(MathConvertUtil.convertToPhaserWidth(width), MathConvertUtil.convertToPhaserHeight(height));
+
+	// TODO
 }
 
 setPosition(x, y) {
-	this.setOrigin(MathConvertUtil.convertToPhaserX(x), MathConvertUtil.convertToPhaserY(y));
+	this.x = MathConvertUtil.convertToPhaserX(x);
+	this.y = MathConvertUtil.convertToPhaserY(y);
 }
 
 }

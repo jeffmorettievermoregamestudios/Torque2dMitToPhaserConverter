@@ -109,6 +109,9 @@ namespace Torque2dMitToPhaserConverter
             // performs a 2nd pass over the whole codebase, delaying the execution of code when starting a new scene and making a callback
             // once the scene is 'active', and thus resuming the code/execution from there
             Process2ndPassForWaitForSceneIsActiveCallbacks();
+			
+			// performs a 2nd pass for converting all 'SceneLayer' values (flips them to negative values, ie similar to multiplying by -1)
+            Process2ndPassForSceneLayerValues();
 
             // 5) Process classes/methods in torquescript files.  Will also remove the class methods etc from the object 
             //    model (so they are not generated later when generating the converted torquescript files)
@@ -2883,6 +2886,47 @@ namespace Torque2dMitToPhaserConverter
 
                             continue;
                         }
+                    }
+
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+		
+		private static void Process2ndPassForSceneLayerValues()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                var foundSceneLayerField = false;
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(BasicCodeToken))
+                    {
+                        if (((BasicCodeToken)codeBlock).Value.ToLower() == "scenelayer")
+                        {
+                            foundSceneLayerField = true;
+                        }
+                    }
+                    else if (foundSceneLayerField && codeBlock.GetType() == typeof(NumericValue))
+                    {
+                        // make numeric value a negative number
+                        ((NumericValue)codeBlock).NumberAsString = "-" + ((NumericValue)codeBlock).NumberAsString;
+                        foundSceneLayerField = false;
                     }
 
                     newCodeFile.Contents.Add(codeBlock);

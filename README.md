@@ -1,6 +1,13 @@
 # Torque2dMitToPhaserConverter
 
-Current Version:  v0.0.4
+Current Version:  v0.0.5
+
+CHANGELOG:
+
+v0.0.5
+- fixes for MathConvertUtil / Sprite Positioning / X and Y logic
+- now inverts the values for the 'depth' of sprites (when converting from T2D to Phaser).  This properly maps
+the depth / layering of sprites
 
 CHANGELOG:
 

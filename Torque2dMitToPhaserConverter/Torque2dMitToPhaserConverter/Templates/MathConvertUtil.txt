@@ -13,7 +13,7 @@
 
 	convertToPhaserY : function (t2dY) {
 
-		return (t2dY + (this.torque2dCameraSizeHeight / 2)) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
+		return ((this.torque2dCameraSizeHeight / 2) - t2dY) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
 	},
 
 	convertToPhaserWidth : function (t2dWidth) {
