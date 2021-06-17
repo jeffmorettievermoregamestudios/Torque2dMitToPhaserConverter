@@ -2923,9 +2923,12 @@ namespace Torque2dMitToPhaserConverter
                         }
                     }
                     else if (foundSceneLayerField && codeBlock.GetType() == typeof(NumericValue))
-                    {
-                        // make numeric value a negative number
-                        ((NumericValue)codeBlock).NumberAsString = "-" + ((NumericValue)codeBlock).NumberAsString;
+                    {				
+						// make numeric value a negative number, unless it is a zero, then leave as-is
+                        if (((NumericValue)codeBlock).NumberAsString != "0")
+                        {
+                            ((NumericValue)codeBlock).NumberAsString = "-" + ((NumericValue)codeBlock).NumberAsString;
+                        }
                         foundSceneLayerField = false;
                     }
 
