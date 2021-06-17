@@ -1,6 +1,11 @@
 # Torque2dMitToPhaserConverter
 
-Current Version:  v0.0.5
+Current Version:  v0.0.6
+
+CHANGELOG:
+
+v0.0.6
+- minor fix to handle zero-valued SceneLayer values 
 
 CHANGELOG:
 
