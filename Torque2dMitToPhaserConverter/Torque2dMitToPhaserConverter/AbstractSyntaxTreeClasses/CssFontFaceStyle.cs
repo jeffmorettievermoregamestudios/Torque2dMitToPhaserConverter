@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 {
-    // NOTE TO DEVELOPERS: Not currently used by Torque2dMitToPhaserConverter
     public class CssFontFaceStyle : PhaserAsset
     {
         public string Name { get; set; }

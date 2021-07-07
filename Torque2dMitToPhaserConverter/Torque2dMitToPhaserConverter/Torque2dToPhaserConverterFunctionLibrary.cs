@@ -52,6 +52,7 @@ namespace Torque2dMitToPhaserConverter
             GlobalVars.PhaserCodeRepo.PhaserClassHierarchyRoot.SubClasses = new List<PhaserClassHierarchyObj>();
             GlobalVars.PhaserCodeRepo.PhaserGlobalVars = new List<GlobalVariable>();
             GlobalVars.PhaserCodeRepo.PhaserSceneList = new List<string>();
+            GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap = new Dictionary<string, List<string>>();
 
             // Will first want to iterate through all .taml files, and setup any resources (ie sprites) in the 'preload' function
 
@@ -65,9 +66,6 @@ namespace Torque2dMitToPhaserConverter
             ProcessAllTorque2dTorquescriptFiles();
 
             // 3) Perform a 2nd pass over the Code Files and process again as necessary
-            // JLM - Nov 11 Continue here
-            // JLM - ie to change a new SceneGraph() { UpdateCallback = false } to have the curly brackets removed and place stuff 
-            // like this.UpdateCallback = false instead following the new call
             bool finished2ndPasses = false;
 
             while (!finished2ndPasses)
@@ -91,29 +89,44 @@ namespace Torque2dMitToPhaserConverter
             // Propagate PhaserObjectType property of LocalVariables and GlobalVariables
             PropagatePhaserObjectTypeForLocalVariablesAndGlobalVariables();
 
+            // Generate the Phaser Class Hierarchy (so we know how the class hierarchy & inheritance structure looks)
+            ProcessPhaserClassHierarchy();
+
+            // assigns the class name of the Scene to the Local/Global variables that are instantiated
+            Process2ndPassForLocalVariableScenes();
+            Process2ndPassForGlobalVariableScenes();
+
+            // Processes the Phaser GlobalVariables and assigns them classes (when defined) for global Scene variables
+            ProcessPhaserGlobalVarsWithSceneClasses();
+
+            // Propagate Class property of LocalVariables and GlobalVariables
+            PropagateClassForLocalVariablesAndGlobalVariables();
+
             // perform a 2nd pass over the whole codebase for processing sprites, and setting them up so that the Sprite constructor has the necessary
             // fields it needs to instantiate a sprite (ie the scene the sprite belongs to and the asset key of the sprite)
             Process2ndPassForLocalVariableSprites();
             Process2ndPassForGlobalVariableSprites();
 
+            // perform a 2nd pass over the whole codebase for processing text objects, and setting them up so that the Text constructor has the necessary
+            // fields it needs to instantiate a text (ie the scene the text belongs to and the font of the text)
+            Process2ndPassForLocalVariablePhaserTexts();
+            Process2ndPassForGlobalVariablePhaserTexts();
+
             // Generates Code Files from templates (ie JavascriptUtil, SpriteBaseClass, etc)
             GenerateCodeFilesFromTemplates();
 
-            // Generate the Phaser Class Hierarchy (so we know how the class hierarchy & inheritance structure looks)
-            ProcessPhaserClassHierarchy();
-
-            // 4) Compile the list of Scenes created within our game (will need this list for later, when generating the index.html file)
+            // 8) Compile the list of Scenes created within our game (will need this list for later, when generating the index.html file)
             //    Also does some more Scene Processing
             CompileListOfScenesCreatedInOurGameAndDoMoreSceneProcessing();
 
             // performs a 2nd pass over the whole codebase, delaying the execution of code when starting a new scene and making a callback
             // once the scene is 'active', and thus resuming the code/execution from there
             Process2ndPassForWaitForSceneIsActiveCallbacks();
-			
-			// performs a 2nd pass for converting all 'SceneLayer' values (flips them to negative values, ie similar to multiplying by -1)
+
+            // performs a 2nd pass for converting all 'SceneLayer' values (flips them to negative values, ie similar to multiplying by -1)
             Process2ndPassForSceneLayerValues();
 
-            // 5) Process classes/methods in torquescript files.  Will also remove the class methods etc from the object 
+            // 4) Process classes/methods in torquescript files.  Will also remove the class methods etc from the object 
             //    model (so they are not generated later when generating the converted torquescript files)
             ProcessTorque2dTorquescriptFilesClassesAndMethods();
 
@@ -126,13 +139,13 @@ namespace Torque2dMitToPhaserConverter
             // generate the actual javascript files for the Phaser classes
             GeneratePhaserClassJavascriptFiles();
 
-            // 6) Generate a GlobalVars script file, to store all the global variables in our Phaser game (ie global variables converted from T2D)
+            // 5) Generate a GlobalVars script file, to store all the global variables in our Phaser game (ie global variables converted from T2D)
             GenerateGlobalVarsJavascriptFile();
 
             // 7) Generate Preload Assets file
             GeneratePreloadAssetsFile();
 
-            // 8) Will now parse module Main and convert to Phaser code.  
+            // ) Will now parse module Main and convert to Phaser code.  
             var indexHtmlObj = CreateStubProject();
 
             // 9) Write index.html to file system
@@ -976,13 +989,42 @@ namespace Torque2dMitToPhaserConverter
                         javascriptFileString += "// NOTE TO DEVELOPERS: will want to preload your assets here; can manually accomplish \n";
                         javascriptFileString += "//this by cut/paste from the preload.js file in the root output folder\n";
                         javascriptFileString += "}\n\n";
+
+                        if (GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap.ContainsKey(phaserClass.ClassName))
+                        {
+                            javascriptFileString += "create() {\n";
+
+                            foreach (var animationAssetKey in GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap[phaserClass.ClassName])
+                            {
+                                var animationAsset = (Torque2dAnimationAsset)GlobalVars.Torque2dModuleDatabase.Torque2dAssetList.FirstOrDefault(asset => asset.Name == animationAssetKey);
+
+                                var frameRate = (int)Math.Round(1 / animationAsset.AnimationTime.Value);
+
+                                javascriptFileString += "this.anims.create({\n";
+                                javascriptFileString += "key: '" + animationAsset.Name + "'\n";
+                                javascriptFileString += "frames: [ " + animationAsset.Name + "'\n";
+
+                                foreach (var frame in animationAsset.AnimationFrames.Split())
+                                {
+                                    javascriptFileString += "{ key: '" + animationAsset.Name + "', frame: " + frame + " }, ";
+                                }
+
+                                javascriptFileString = javascriptFileString.Substring(0, javascriptFileString.Length - 2);
+                                javascriptFileString += " ],\n";
+                                javascriptFileString += "frameRate: " + frameRate + ",\n";
+                                javascriptFileString += "repeat: -1\n";
+                                javascriptFileString += "});\n\n";
+                            }
+
+                            javascriptFileString += "}\n\n";
+                        }
                     }
 
-                    if (phaserClassHierarchyObj.Parent.ClassName == PhaserConstants.BitmapTextBaseClassName)
+                    if (phaserClassHierarchyObj.Parent.ClassName == PhaserConstants.PhaserTextBaseClassName)
                     {
-                        // in this case, want to generate a 'constructor' for this class, which calls a super to BitmapTextBaseClass (which in turns calls super to Phaser.GameObjects.BitmapText)
-                        javascriptFileString += "constructor (scene, x, y, font) {\n";
-                        javascriptFileString += "super(scene, x, y, font);\n";
+                        // in this case, want to generate a 'constructor' for this class, which calls a super to PhaserTextBaseClass (which in turns calls super to Phaser.GameObjects.Text)
+                        javascriptFileString += "constructor (scene, x, y, text, style) {\n";
+                        javascriptFileString += "super(scene, x, y, text, style);\n";
                         javascriptFileString += "}\n\n";
                     }
                 }
@@ -1642,29 +1684,30 @@ namespace Torque2dMitToPhaserConverter
 
                     File.Copy(phaserAsset.Torque2dAssetFileReference.FullName, destinationFilePath, true);
                 }
-                if (phaserAsset.GetType() == typeof(BitmapFontAsset))
+                else if (phaserAsset.GetType() == typeof(SpritesheetAsset))
                 {
-                    var baseResourceUrl = ((BitmapFontAsset)phaserAsset).ResourceUrl;
-                    var resourceFileWithPngExtension = baseResourceUrl.Substring(0, baseResourceUrl.LastIndexOf(".")) + "Font.png";
-                    var resourceFileWithXmlExtension = baseResourceUrl.Substring(0, baseResourceUrl.LastIndexOf(".")) + "Font.xml";
+                    var destinationFilePath = Path.Combine(GlobalVars.PhaserProjectOutputFolder, ((SpritesheetAsset)phaserAsset).ResourceUrl.Replace('/', '\\'));
 
-                    var destinationFilePathForPng = Path.Combine(GlobalVars.PhaserProjectOutputFolder, resourceFileWithPngExtension.Replace('/', '\\'));
-                    var destinationFilePathForXml = Path.Combine(GlobalVars.PhaserProjectOutputFolder, resourceFileWithXmlExtension.Replace('/', '\\'));
-
-                    var destinationFolderPathForPng = Path.GetDirectoryName(destinationFilePathForPng);
-                    if (!Directory.Exists(destinationFolderPathForPng))
+                    var destinationFolderPath = Path.GetDirectoryName(destinationFilePath);
+                    if (!Directory.Exists(destinationFolderPath))
                     {
-                        Directory.CreateDirectory(destinationFolderPathForPng);
+                        Directory.CreateDirectory(destinationFolderPath);
                     }
 
-                    var destinationFolderPathForXml = Path.GetDirectoryName(destinationFilePathForXml);
-                    if (!Directory.Exists(destinationFolderPathForXml))
-                    {
-                        Directory.CreateDirectory(destinationFolderPathForXml);
-                    }
+                    File.Copy(phaserAsset.Torque2dAssetFileReference.FullName, destinationFilePath, true);
+                }
+            }
 
-                    File.Create(destinationFilePathForPng).Close();
-                    File.Create(destinationFilePathForXml).Close();
+            // will also create a folder for any ttf font files as well, although we will not be populating the fonts into that folder (T2D projects don't have ttf files usually, will expect the user/developer to provide)
+            if (GlobalVars.PhaserAssetRepo.PhaserCssFontFaceStyleList.Count > 0)
+            {
+                var destinationFilePath = Path.Combine(GlobalVars.PhaserProjectOutputFolder, 
+                    GlobalVars.PhaserAssetRepo.PhaserCssFontFaceStyleList.First().ResourceUrl.Replace('/', '\\'));
+
+                var destinationFolderPath = Path.GetDirectoryName(destinationFilePath);
+                if (!Directory.Exists(destinationFolderPath))
+                {
+                    Directory.CreateDirectory(destinationFolderPath);
                 }
             }
         }
@@ -1730,8 +1773,7 @@ namespace Torque2dMitToPhaserConverter
             preloadFunction.Contents = functionContents;
             preloadFunction.CanWriteAsEmptyFunction = true;
 
-            var preloadFunctionComment = "\n\n\n\n\n\n// NOTE: For Bitmap Fonts, you will want to generate the actual resource files yourself.\n";
-            preloadFunctionComment += "// Look at https://photonstorm.github.io/phaser3-docs/Phaser.GameObjects.BitmapText.html and read how \"To create a BitmapText data files\" for more info.\n\n";
+            var preloadFunctionComment = "\n\n\n\n\n\n// NOTE: For Phaser Text Objects, you don't need to preload these assets but you do need to copy the necessary ttf (or, perhaps other font file if you decide to) files to the assets/fonts/ttf directory.\n";
 
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, "preload.js"), preloadFunctionComment + preloadFunction.ConvertToCode());
         }
@@ -1775,9 +1817,9 @@ namespace Torque2dMitToPhaserConverter
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "SpriteBaseClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SpriteBaseClass.txt"));
 
-            // BitmapTextBaseClass.js
-            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "BitmapTextBaseClass.js"),
-                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\BitmapTextBaseClass.txt"));
+            // PhaserTextBaseClass.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "PhaserTextBaseClass.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\PhaserTextBaseClass.txt"));
         }
 
         private static void CompileListOfScenesCreatedInOurGameAndDoMoreSceneProcessing()
@@ -2098,6 +2140,7 @@ namespace Torque2dMitToPhaserConverter
 
                     if (codeBlock.GetType() == typeof(LocalVariable))
                     {
+                        var localVariableRef = (LocalVariable)codeBlock;
                         bool continueForLoop = false;
 
                         // Check to make sure this is a statement where the local variable is initialized.  If its something else (ie like
@@ -2151,9 +2194,44 @@ namespace Torque2dMitToPhaserConverter
                                     codeFile.Contents.Insert(resultSceneToAddThisSpriteToTuple.Item3 + 2, new CommentBlockEnd());
                                 }
 
+                                // NOTE: Not all sprites are expected to have an Animation.  Many will not have an animation.
+                                var resultAnimationForSpriteTuple = GetAnimationForSprite(codeFile, i, codeBlock);
+
+                                if (resultAnimationForSpriteTuple.Item2 >= 0)
+                                {
+                                    codeFile.Contents.Insert(resultAnimationForSpriteTuple.Item2 - 1, new CommentBlockBegin());
+                                }
+
+                                if (resultAnimationForSpriteTuple.Item3 >= 0)
+                                {
+                                    codeFile.Contents.Insert(resultAnimationForSpriteTuple.Item3 + 2, new CommentBlockEnd());
+                                }
+
+                                // store set of Scenes and associated Animations needed to add to them.  Will assign the animation to the Scene class, and add in the create function of the class (to be done later)
+                                if (resultAnimationForSpriteTuple.Item1 != null)
+                                {
+                                    var sceneVariable = resultSceneToAddThisSpriteToTuple.Item1;
+
+                                    if (sceneVariable != null)
+                                    {
+                                        if (sceneVariable.Class != null)
+                                        {
+                                            if (!GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap.ContainsKey(sceneVariable.Class))
+                                            {
+                                                GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap.Add(sceneVariable.Class, new List<string> { resultAnimationForSpriteTuple.Item1 });
+                                            }
+                                            else if (!GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap[sceneVariable.Class].Contains(resultAnimationForSpriteTuple.Item1))
+                                            {
+                                                GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap[sceneVariable.Class].Add(resultAnimationForSpriteTuple.Item1);
+                                            }
+                                        }
+                                    }
+                                }
+
                                 for (var j = i + 1; j < codeFile.Contents.Count; j++)
                                 {
-                                    bool breakOutOfForLoop = false;
+                                    bool finishedSpriteInstantiationCodeConvert = false;
+                                    var idx = -1;
 
                                     var codeBlock2 = codeFile.Contents[j];
 
@@ -2217,7 +2295,8 @@ namespace Torque2dMitToPhaserConverter
                                                         });
                                                     }
 
-                                                    breakOutOfForLoop = true;
+                                                    finishedSpriteInstantiationCodeConvert = true;
+                                                    idx = k + 7;
                                                     break;
                                                 }
                                             }
@@ -2228,9 +2307,41 @@ namespace Torque2dMitToPhaserConverter
                                         break;
                                     }
 
-                                    if (breakOutOfForLoop)
+                                    if (finishedSpriteInstantiationCodeConvert)
                                     {
-                                        break;
+                                        var breakOutOfLoop = false;
+
+                                        if (resultAnimationForSpriteTuple.Item1 != null)
+                                        {
+                                            for (var k = idx; k < codeFile.Contents.Count; k++)
+                                            {
+                                                var codeBlock3 = codeFile.Contents[k];
+
+                                                if (codeBlock3.GetType() == typeof(Semicolon))
+                                                {
+                                                    var codeBlock4 = codeFile.Contents[k + 1];
+
+                                                    if (codeBlock4.GetType() == typeof(NewLineCharacter))
+                                                    {
+                                                        k++;
+                                                    }
+
+                                                    codeFile.Contents.InsertRange(k + 1, GenerateAnimationStatementForSprite(localVariableRef, resultAnimationForSpriteTuple.Item1));
+
+                                                    breakOutOfLoop = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            break;
+                                        }
+
+                                        if (breakOutOfLoop)
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
 
@@ -2428,6 +2539,70 @@ namespace Torque2dMitToPhaserConverter
             return Tuple.Create<Variable, int, int>(null, -1, -1);
         }
 
+        private static Tuple<string, int, int> GetAnimationForSprite(CodeFile codeFile, int idx, CodeBlock inputCodeBlock)
+        {
+            var variable = (Variable)inputCodeBlock;
+
+            string animationAssetKey = null;
+            int beginCommentIdx = -1;
+            int endCommentIdx = -1;
+
+            for (var i = idx + 1; i < codeFile.Contents.Count; i++)
+            {
+                var codeBlock = codeFile.Contents[i];
+
+                if (codeBlock.GetType().IsSubclassOf(typeof(Variable)))
+                {
+                    if (variable.Name.ToLower() == ((Variable)codeBlock).Name.ToLower())
+                    {
+                        beginCommentIdx = i;
+
+                        var codeBlock2 = codeFile.Contents[i + 1];
+
+                        if (codeBlock2.GetType() == typeof(Dot))
+                        {
+                            var codeBlock3 = codeFile.Contents[i + 2];
+
+                            if (codeBlock3.GetType() == typeof(BasicCodeToken))
+                            {
+                                if (((BasicCodeToken)codeBlock3).Value.ToLower() == "animation")
+                                {
+                                    for (var j = i + 3; j < codeFile.Contents.Count; j++)
+                                    {
+                                        var codeBlock4 = codeFile.Contents[j];
+
+                                        if (codeBlock4.GetType() == typeof(WhitespaceCharacter) || codeBlock4.GetType() == typeof(EqualsOperator))
+                                        {
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            animationAssetKey = ((StringValue)codeBlock4).Val.Trim('"');
+
+                                            for (var k = j + 1; k < codeFile.Contents.Count; k++)
+                                            {
+                                                var codeBlock5 = codeFile.Contents[k];
+
+                                                if (codeBlock5.GetType() == typeof(Semicolon))
+                                                {
+                                                    endCommentIdx = k;
+                                                    break;
+                                                }
+                                            }
+
+                                            return Tuple.Create<string, int, int>(animationAssetKey, beginCommentIdx, endCommentIdx);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return Tuple.Create<string, int, int>(null, -1, -1);
+        }
+
         private static void PopulatePhaserGlobalVar()
         {
             foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
@@ -2534,7 +2709,7 @@ namespace Torque2dMitToPhaserConverter
 
         // TODO - Extend functionality for cases where the sprite variable itself isn't just a global variable, but
         // instead a property of an object
-        // TODO - need to handle for cases where the local variable is re-initialized to a 'new Sprite()' again later on
+        // TODO - need to handle for cases where the global variable is re-initialized to a 'new Sprite()' again later on
         private static void Process2ndPassForGlobalVariableSprites()
         {
             var newCodeFileList = new List<CodeFile>();
@@ -2547,7 +2722,7 @@ namespace Torque2dMitToPhaserConverter
                     Contents = new List<CodeBlock>()
                 };
 
-                // Note that in our case for this function, we simply add the local variables once we come across them the 'first' time,
+                // Note that in our case for this function, we simply add the global variables once we come across them the 'first' time,
                 // and then dont worry about processing them again
                 var globalVariablesCollection = new List<GlobalVariable>();
 
@@ -2557,6 +2732,8 @@ namespace Torque2dMitToPhaserConverter
 
                     if (codeBlock.GetType() == typeof(GlobalVariable))
                     {
+                        var globalVariableRef = (GlobalVariable)codeBlock;
+
                         if (!globalVariablesCollection.Exists(gv => ((GlobalVariable)codeBlock).Name.ToLower() == gv.Name.ToLower()))
                         {
                             if (codeBlock.PhaserObjectType == PhaserObjectType.Sprite)
@@ -2635,9 +2812,44 @@ namespace Torque2dMitToPhaserConverter
                                     }
                                 }
 
+                                // NOTE: Not all sprites are expected to have an Animation.  Many will not have an animation.
+                                var resultAnimationForSpriteTuple = GetAnimationForSprite(codeFile, i, codeBlock);
+
+                                if (resultAnimationForSpriteTuple.Item2 >= 0)
+                                {
+                                    codeFile.Contents.Insert(resultAnimationForSpriteTuple.Item2 - 1, new CommentBlockBegin());
+                                }
+
+                                if (resultAnimationForSpriteTuple.Item3 >= 0)
+                                {
+                                    codeFile.Contents.Insert(resultAnimationForSpriteTuple.Item3 + 2, new CommentBlockEnd());
+                                }
+
+                                // store set of Scenes and associated Animations needed to add to them.  Will assign the animation to the Scene class, and add in the create function of the class (to be done later)
+                                if (resultAnimationForSpriteTuple.Item1 != null)
+                                {
+                                    var sceneVariable = resultSceneToAddThisSpriteToTuple.Item1;
+
+                                    if (sceneVariable != null)
+                                    {
+                                        if (sceneVariable.Class != null)
+                                        {
+                                            if (!GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap.ContainsKey(sceneVariable.Class))
+                                            {
+                                                GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap.Add(sceneVariable.Class, new List<string> { resultAnimationForSpriteTuple.Item1 });
+                                            }
+                                            else if (!GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap[sceneVariable.Class].Contains(resultAnimationForSpriteTuple.Item1))
+                                            {
+                                                GlobalVars.PhaserCodeRepo.PhaserSceneListAndAnimationsMap[sceneVariable.Class].Add(resultAnimationForSpriteTuple.Item1);
+                                            }
+                                        }
+                                    }
+                                }
+
                                 for (var j = i + 1; j < codeFile.Contents.Count; j++)
                                 {
-                                    bool breakOutOfForLoop = false;
+                                    bool finishedSpriteInstantiationCodeConvert = false;
+                                    var idx = -1;
 
                                     var codeBlock2 = codeFile.Contents[j];
 
@@ -2701,7 +2913,8 @@ namespace Torque2dMitToPhaserConverter
                                                         });
                                                     }
 
-                                                    breakOutOfForLoop = true;
+                                                    finishedSpriteInstantiationCodeConvert = true;
+                                                    idx = k + 7;
                                                     break;
                                                 }
                                             }
@@ -2712,9 +2925,41 @@ namespace Torque2dMitToPhaserConverter
                                         break;
                                     }
 
-                                    if (breakOutOfForLoop)
+                                    if (finishedSpriteInstantiationCodeConvert)
                                     {
-                                        break;
+                                        var breakOutOfLoop = false;
+
+                                        if (resultAnimationForSpriteTuple.Item1 != null)
+                                        {
+                                            for (var k = idx; k < codeFile.Contents.Count; k++)
+                                            {
+                                                var codeBlock3 = codeFile.Contents[k];
+
+                                                if (codeBlock3.GetType() == typeof(Semicolon))
+                                                {
+                                                    var codeBlock4 = codeFile.Contents[k + 1];
+
+                                                    if (codeBlock4.GetType() == typeof(NewLineCharacter))
+                                                    {
+                                                        k++;
+                                                    }
+
+                                                    codeFile.Contents.InsertRange(k + 1, GenerateAnimationStatementForSprite(globalVariableRef, resultAnimationForSpriteTuple.Item1));
+
+                                                    breakOutOfLoop = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            break;
+                                        }
+
+                                        if (breakOutOfLoop)
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
 
@@ -2773,7 +3018,7 @@ namespace Torque2dMitToPhaserConverter
                         {
                             if (currentMethod != null)
                             {
-                                newCodeFile.Contents.AddRange( new List<CodeBlock> {
+                                newCodeFile.Contents.AddRange(new List<CodeBlock> {
                                     new LocalVariable { Name = "%this" },
                                     new Dot(),
                                     new BasicCodeToken { Value = callbackName }
@@ -2781,7 +3026,7 @@ namespace Torque2dMitToPhaserConverter
                             }
                             else
                             {
-                                newCodeFile.Contents.Add(new BasicCodeToken { Value = callbackName } );
+                                newCodeFile.Contents.Add(new BasicCodeToken { Value = callbackName });
                             }
 
                             for (i = i + 1; i < codeFile.Contents.Count; i++)
@@ -2896,8 +3141,8 @@ namespace Torque2dMitToPhaserConverter
 
             GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
         }
-		
-		private static void Process2ndPassForSceneLayerValues()
+
+        private static void Process2ndPassForSceneLayerValues()
         {
             var newCodeFileList = new List<CodeFile>();
 
@@ -2923,8 +3168,8 @@ namespace Torque2dMitToPhaserConverter
                         }
                     }
                     else if (foundSceneLayerField && codeBlock.GetType() == typeof(NumericValue))
-                    {				
-						// make numeric value a negative number, unless it is a zero, then leave as-is
+                    {
+                        // make numeric value a negative number, unless it is a zero, then leave as-is
                         if (((NumericValue)codeBlock).NumberAsString != "0")
                         {
                             ((NumericValue)codeBlock).NumberAsString = "-" + ((NumericValue)codeBlock).NumberAsString;
@@ -2940,5 +3185,1018 @@ namespace Torque2dMitToPhaserConverter
 
             GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
         }
+
+        private static List<CodeBlock> GenerateAnimationStatementForSprite(Variable spriteVar, string animationAssetKey)
+        {
+            var animationAsset = (Torque2dAnimationAsset)GlobalVars.Torque2dModuleDatabase.Torque2dAssetList.FirstOrDefault(asset => asset.Name == animationAssetKey);
+
+            if (animationAsset != null)
+            {
+                if (spriteVar.GetType() == typeof(GlobalVariable))
+                {
+                    return new List<CodeBlock>
+                    {
+                        new GlobalVariable { Name = spriteVar.Name, PhaserObjectType = spriteVar.PhaserObjectType },
+                        new Dot(),
+                        new BasicCodeToken { Value = "anims" },
+                        new Dot(),
+                        new BasicCodeToken { Value = "play" },
+                        new OpenRoundBracket(),
+                        new StringValue { Val = "\"" + animationAssetKey + "\"" },
+                        new Comma(),
+                        new WhitespaceCharacter { WhitespaceChar = ' ' },
+                        new BooleanTrueValue(),
+                        new ClosedRoundBracket(),
+                        new Semicolon(),
+                        new NewLineCharacter(),
+                    };
+                }
+                else // spriteVar.GetType() == typeof(LocalVariable)
+                {
+                    return new List<CodeBlock>
+                    {
+                        new LocalVariable { Name = spriteVar.Name, PhaserObjectType = spriteVar.PhaserObjectType },
+                        new Dot(),
+                        new BasicCodeToken { Value = "anims" },
+                        new Dot(),
+                        new BasicCodeToken { Value = "play" },
+                        new OpenRoundBracket(),
+                        new StringValue { Val = "\"" + animationAssetKey + "\"" },
+                        new Comma(),
+                        new WhitespaceCharacter { WhitespaceChar = ' ' },
+                        new BooleanTrueValue(),
+                        new ClosedRoundBracket(),
+                        new Semicolon(),
+                        new NewLineCharacter(),
+                    };
+                }
+            }
+
+            // return empty list if for some reason the animation asset cannot be found
+            return new List<CodeBlock>();
+        }
+        
+        private static void Process2ndPassForLocalVariableScenes()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                var currentLocalVariablesNode = new LocalVariablesTreeNode
+                {
+                    Parent = null,
+                    LocalVariablesDiscovered = new List<LocalVariable>()
+                };
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(LocalVariable))
+                    {
+                        var localVariableRef = (LocalVariable)codeBlock;
+                        bool continueForLoop = false;
+
+                        // Check to make sure this is a statement where the local variable is initialized.  If its something else (ie like
+                        // a local variable in a function declaration) then should continue instead
+                        for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                        {
+                            var codeBlock2 = codeFile.Contents[j];
+
+                            if (codeBlock2.GetType() == typeof(EqualsOperator))
+                            {
+                                break;
+                            }
+                            else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                            {
+                                continueForLoop = true;
+                                break;
+                            }
+                            else if (codeBlock2.GetType() == typeof(Dot))
+                            {
+                                continueForLoop = true;
+                                break;
+                            }
+                        }
+
+                        if (continueForLoop)
+                        {
+                            newCodeFile.Contents.Add(codeBlock);
+                            continue;
+                        }
+
+                        if (!currentLocalVariablesNode.ContainsLocalVariable((LocalVariable)codeBlock))
+                        {
+                            if (codeBlock.PhaserObjectType == PhaserObjectType.Scene)
+                            {
+                                for (var j = i; j < codeFile.Contents.Count; j++)
+                                {
+                                    var codeBlock2 = codeFile.Contents[j];
+
+                                    if (codeBlock2.GetType() == typeof(NewOperator))
+                                    {
+                                        var idx = j + 1;
+
+                                        while (idx < codeFile.Contents.Count)
+                                        {
+                                            if (codeFile.Contents[idx].GetType() == typeof(BasicCodeToken))
+                                            {
+                                                break;
+                                            }
+
+                                            idx++;
+                                        }
+
+                                        var matchingSceneClass = FindMatchingSceneClass((BasicCodeToken)codeFile.Contents[idx]);
+
+                                        if (matchingSceneClass != null)
+                                        {
+                                            localVariableRef.Class = matchingSceneClass.ClassName;
+                                        }
+
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!currentLocalVariablesNode.ContainsLocalVariable((LocalVariable)codeBlock))
+                            {
+                                currentLocalVariablesNode.LocalVariablesDiscovered.Add((LocalVariable)codeBlock);
+                            }
+                        }
+                    }
+
+                    else if (codeBlock.GetType() == typeof(OpenCurlyBracket))
+                    {
+                        var nextLevelLocalVariablesNode = new LocalVariablesTreeNode
+                        {
+                            Parent = currentLocalVariablesNode,
+                            LocalVariablesDiscovered = new List<LocalVariable>()
+                        };
+
+                        currentLocalVariablesNode = nextLevelLocalVariablesNode;
+                    }
+                    else if (codeBlock.GetType() == typeof(ClosedCurlyBracket))
+                    {
+                        var tempNode = currentLocalVariablesNode.Parent;
+                        currentLocalVariablesNode.LocalVariablesDiscovered.Clear();
+                        currentLocalVariablesNode = tempNode;
+                    }
+
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        private static void Process2ndPassForGlobalVariableScenes()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                // Note that in our case for this function, we simply add the global variables once we come across them the 'first' time,
+                // and then dont worry about processing them again
+                var globalVariablesCollection = new List<GlobalVariable>();
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(GlobalVariable))
+                    {
+                        var globalVariableRef = (GlobalVariable)codeBlock;
+                        bool continueForLoop = false;
+
+                        // Check to make sure this is a statement where the local variable is initialized.  If its something else (ie like
+                        // a local variable in a function declaration) then should continue instead
+                        for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                        {
+                            var codeBlock2 = codeFile.Contents[j];
+
+                            if (codeBlock2.GetType() == typeof(EqualsOperator))
+                            {
+                                break;
+                            }
+                            else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                            {
+                                continueForLoop = true;
+                                break;
+                            }
+                            else if (codeBlock2.GetType() == typeof(Dot))
+                            {
+                                continueForLoop = true;
+                                break;
+                            }
+                        }
+
+                        if (continueForLoop)
+                        {
+                            newCodeFile.Contents.Add(codeBlock);
+                            continue;
+                        }
+
+                        if (!globalVariablesCollection.Exists(gv => ((GlobalVariable)codeBlock).Name.ToLower() == gv.Name.ToLower()))
+                        {
+                            if (codeBlock.PhaserObjectType == PhaserObjectType.Scene)
+                            {
+                                for (var j = i; j < codeFile.Contents.Count; j++)
+                                {
+                                    var codeBlock2 = codeFile.Contents[j];
+
+                                    if (codeBlock2.GetType() == typeof(NewOperator))
+                                    {
+                                        var idx = j + 1;
+
+                                        while (idx < codeFile.Contents.Count)
+                                        {
+                                            if (codeFile.Contents[idx].GetType() == typeof(BasicCodeToken))
+                                            {
+                                                break;
+                                            }
+
+                                            idx++;
+                                        }
+
+                                        var matchingSceneClass = FindMatchingSceneClass((BasicCodeToken)codeFile.Contents[idx]);
+
+                                        if (matchingSceneClass != null)
+                                        {
+                                            globalVariableRef.Class = matchingSceneClass.ClassName;
+                                        }
+
+                                        break;
+                                    }
+                                }
+                            }                               
+
+                            if (!globalVariablesCollection.Exists(gv => ((GlobalVariable)codeBlock).Name.ToLower() == gv.Name.ToLower()))
+                            {
+                                globalVariablesCollection.Add((GlobalVariable)codeBlock);
+                            }
+                        }
+                    }
+
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        private static void PropagateClassForLocalVariablesAndGlobalVariables()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                var currentLocalVariablesNode = new LocalVariablesTreeNode
+                {
+                    Parent = null,
+                    LocalVariablesDiscovered = new List<LocalVariable>()
+                };
+
+                var currentLocalVariablesCollection = new List<LocalVariable>();
+
+                foreach (var codeBlock in codeFile.Contents)
+                {
+                    if (codeBlock.GetType() == typeof(GlobalVariable))
+                    {
+                        var globalVarCodeBlock = (GlobalVariable)codeBlock;
+                        globalVarCodeBlock.Class = GlobalVars.PhaserCodeRepo.PhaserGlobalVars.FirstOrDefault(x => x.Name.ToLower() == globalVarCodeBlock.Name.ToLower()).Class;
+                    }
+                    else if (codeBlock.GetType() == typeof(LocalVariable))
+                    {
+                        if (!currentLocalVariablesNode.ContainsLocalVariable((LocalVariable)codeBlock))
+                        {
+                            currentLocalVariablesNode.LocalVariablesDiscovered.Add((LocalVariable)codeBlock);
+                        }
+                        else
+                        {
+                            if (((LocalVariable)codeBlock).Class != null)
+                            {
+                                currentLocalVariablesNode.SetClassForLocalVariables((LocalVariable)codeBlock);
+                            }
+                        }
+
+                        currentLocalVariablesCollection.Add((LocalVariable)codeBlock);
+                    }
+                    else if (codeBlock.GetType() == typeof(OpenCurlyBracket))
+                    {
+                        var nextLevelLocalVariablesNode = new LocalVariablesTreeNode
+                        {
+                            Parent = currentLocalVariablesNode,
+                            LocalVariablesDiscovered = new List<LocalVariable>()
+                        };
+
+                        currentLocalVariablesNode = nextLevelLocalVariablesNode;
+                    }
+                    else if (codeBlock.GetType() == typeof(ClosedCurlyBracket))
+                    {
+                        // set the Phaser Object Type for all local variables in the currentLocalVariablesCollection
+                        foreach (var localVar in currentLocalVariablesCollection)
+                        {
+                            localVar.PhaserObjectType = currentLocalVariablesNode.GetLocalVariableByName(localVar.Name).PhaserObjectType;
+                        }
+
+                        // and remove the currentLocalVariablesNode local variables from the currentLocalVariablesCollection
+                        currentLocalVariablesCollection.RemoveAll(lvColl => currentLocalVariablesNode.LocalVariablesDiscovered.Exists(lvNode => lvNode.Name.ToLower() == lvColl.Name.ToLower()));
+
+                        var tempNode = currentLocalVariablesNode.Parent;
+                        currentLocalVariablesNode.LocalVariablesDiscovered.Clear();
+                        currentLocalVariablesNode = tempNode;
+                    }
+
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        private static void ProcessPhaserGlobalVarsWithSceneClasses()
+        {
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                foreach (var codeBlock in codeFile.Contents)
+                {
+                    if (codeBlock.GetType() == typeof(GlobalVariable))
+                    {
+                        var globalVarCodeBlock = (GlobalVariable)codeBlock;
+
+                        if (GlobalVars.PhaserCodeRepo.PhaserGlobalVars.FirstOrDefault(x => x.Name.ToLower() == globalVarCodeBlock.Name.ToLower()) == null)
+                        {
+                            GlobalVars.PhaserCodeRepo.PhaserGlobalVars.Add(globalVarCodeBlock);
+                        }
+                        else
+                        {
+                            if (GlobalVars.PhaserCodeRepo.PhaserGlobalVars.FirstOrDefault(x => x.Name.ToLower() == globalVarCodeBlock.Name.ToLower()).Class == null)
+                            {
+                                GlobalVars.PhaserCodeRepo.PhaserGlobalVars.FirstOrDefault(x => x.Name.ToLower() == globalVarCodeBlock.Name.ToLower()).Class = globalVarCodeBlock.Class;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // TODO - Extend functionality for cases where the text variable itself isn't just a local variable, but
+        // instead a property of an object
+        // TODO - need to handle for cases where the local variable is re-initialized to a 'new Text()' again later on
+        private static void Process2ndPassForLocalVariablePhaserTexts()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                // Note that in our case for this function, we simply add the local variables once we come across them the 'first' time,
+                // and then dont worry about processing them again
+                var currentLocalVariablesNode = new LocalVariablesTreeNode
+                {
+                    Parent = null,
+                    LocalVariablesDiscovered = new List<LocalVariable>()
+                };
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(LocalVariable))
+                    {
+                        var localVariableRef = (LocalVariable)codeBlock;
+                        bool continueForLoop = false;
+
+                        // Check to make sure this is a statement where the local variable is initialized.  If its something else (ie like
+                        // a local variable in a function declaration) then should continue instead
+                        for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                        {
+                            var codeBlock2 = codeFile.Contents[j];
+
+                            if (codeBlock2.GetType() == typeof(EqualsOperator))
+                            {
+                                break;
+                            }
+                            else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                            {
+                                continueForLoop = true;
+                                break;
+                            }
+                        }
+
+                        if (continueForLoop)
+                        {
+                            newCodeFile.Contents.Add(codeBlock);
+                            continue;
+                        }
+
+                        if (!currentLocalVariablesNode.ContainsLocalVariable((LocalVariable)codeBlock))
+                        {
+                            if (codeBlock.PhaserObjectType == PhaserObjectType.Text)
+                            {
+                                var resultFontTuple = GetFontForText(codeFile, i, codeBlock);
+
+                                if (resultFontTuple.Item2 >= 0)
+                                {
+                                    codeFile.Contents.Insert(resultFontTuple.Item2 - 1, new CommentBlockBegin());
+                                }
+
+                                if (resultFontTuple.Item3 >= 0)
+                                {
+                                    codeFile.Contents.Insert(resultFontTuple.Item3 + 2, new CommentBlockEnd());
+                                }
+
+                                var resultSceneToAddThisTextToTuple = GetSceneToAddTextTo(codeFile, i, codeBlock);
+
+                                if (resultSceneToAddThisTextToTuple.Item2 >= 0)
+                                {
+                                    codeFile.Contents.Insert(resultSceneToAddThisTextToTuple.Item2 - 1, new CommentBlockBegin());
+                                }
+
+                                if (resultSceneToAddThisTextToTuple.Item3 >= 0)
+                                {
+                                    codeFile.Contents.Insert(resultSceneToAddThisTextToTuple.Item3 + 2, new CommentBlockEnd());
+                                }
+
+                                for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                                {
+                                    var codeBlock2 = codeFile.Contents[j];
+
+                                    if (codeBlock2.GetType() == typeof(WhitespaceCharacter) || codeBlock2.GetType() == typeof(EqualsOperator) || codeBlock2.GetType() == typeof(NewOperator))
+                                    {
+                                        continue;
+                                    }
+
+                                    if (codeBlock2.GetType() == typeof(BasicCodeToken))
+                                    {
+                                        if (((BasicCodeToken)codeBlock2).Value.ToLower() == Torque2dConstants.TextSpriteClassName.ToLower())
+                                        {
+                                            for (var k = j + 1; k < codeFile.Contents.Count; k++)
+                                            {
+                                                var codeBlock3 = codeFile.Contents[k];
+
+                                                if (codeBlock3.GetType() == typeof(WhitespaceCharacter))
+                                                {
+                                                    continue;
+                                                }
+
+                                                if (codeBlock3.GetType() == typeof(OpenRoundBracket))
+                                                {
+                                                    if (resultSceneToAddThisTextToTuple.Item1 == null)
+                                                    {
+                                                        codeFile.Contents.InsertRange(k + 1, new List<CodeBlock>
+                                                        {
+                                                            new LocalVariable{ Name = "%undefinedOccurredDuringPhaserConversionForSceneToAddTo", PhaserObjectType = PhaserObjectType.None },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new StringValue { Val = "\"\"" },
+                                                            new Comma(),
+                                                            new OpenCurlyBracket(),
+                                                            new BasicCodeToken { Value = "fontFamily" },
+                                                            new Colon(),
+                                                            resultFontTuple.Item1 == null ? new StringValue { Val = "undefinedOccurredDuringPhaserConversionForFont" } : resultFontTuple.Item1.DeepCopy(),
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "fontSize" },
+                                                            new Colon(),
+                                                            new NumericValue { NumberAsString = "32" }, // TODO: Create some sort of fontSize conversion formula (based on T2D FontSize property) for this line.  Consider adding code to MathConvertUtil and PhaserTextBaseClass
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "color" },
+                                                            new Colon(),
+                                                            new StringValue { Val = "\"#ff0000\"" }, // TODO: Still need to implement how to set Font color
+                                                            new ClosedCurlyBracket(),
+                                                        });
+                                                    }
+                                                    else if (resultSceneToAddThisTextToTuple.Item1.GetType() == typeof(LocalVariable))
+                                                    {
+                                                        codeFile.Contents.InsertRange(k + 1, new List<CodeBlock>
+                                                        {
+                                                            new LocalVariable{ Name = resultSceneToAddThisTextToTuple.Item1.Name, PhaserObjectType = resultSceneToAddThisTextToTuple.Item1.PhaserObjectType },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new StringValue { Val = "\"\"" },
+                                                            new Comma(),
+                                                            new OpenCurlyBracket(),
+                                                            new BasicCodeToken { Value = "fontFamily" },
+                                                            new Colon(),
+                                                            resultFontTuple.Item1 == null ? new StringValue { Val = "undefinedOccurredDuringPhaserConversionForFont" } : resultFontTuple.Item1.DeepCopy(),
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "fontSize" },
+                                                            new Colon(),
+                                                            new NumericValue { NumberAsString = "32" }, // TODO: Create some sort of fontSize conversion formula (based on T2D FontSize property) for this line.  Consider adding code to MathConvertUtil and PhaserTextBaseClass
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "color" },
+                                                            new Colon(),
+                                                            new StringValue { Val = "\"#ff0000\"" }, // TODO: Still need to implement how to set Font color
+                                                            new ClosedCurlyBracket(),
+                                                        });
+                                                    }
+                                                    else if (resultSceneToAddThisTextToTuple.Item1.GetType() == typeof(GlobalVariable))
+                                                    {
+                                                        codeFile.Contents.InsertRange(k + 1, new List<CodeBlock>
+                                                        {
+                                                            new GlobalVariable{ Name = resultSceneToAddThisTextToTuple.Item1.Name, PhaserObjectType = resultSceneToAddThisTextToTuple.Item1.PhaserObjectType },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new StringValue { Val = "\"\"" },
+                                                            new Comma(),
+                                                            new OpenCurlyBracket(),
+                                                            new BasicCodeToken { Value = "fontFamily" },
+                                                            new Colon(),
+                                                            resultFontTuple.Item1 == null ? new StringValue { Val = "undefinedOccurredDuringPhaserConversionForFont" } : resultFontTuple.Item1.DeepCopy(),
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "fontSize" },
+                                                            new Colon(),
+                                                            new NumericValue { NumberAsString = "32" }, // TODO: Create some sort of fontSize conversion formula (based on T2D FontSize property) for this line.  Consider adding code to MathConvertUtil and PhaserTextBaseClass
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "color" },
+                                                            new Colon(),
+                                                            new StringValue { Val = "\"#ff0000\"" }, // TODO: Still need to implement how to set Font color
+                                                            new ClosedCurlyBracket(),
+                                                        });
+                                                    }
+
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                if (!currentLocalVariablesNode.ContainsLocalVariable((LocalVariable)codeBlock))
+                                {
+                                    currentLocalVariablesNode.LocalVariablesDiscovered.Add((LocalVariable)codeBlock);
+                                }
+                            }
+                        }
+                    }
+                    else if (codeBlock.GetType() == typeof(OpenCurlyBracket))
+                    {
+                        var nextLevelLocalVariablesNode = new LocalVariablesTreeNode
+                        {
+                            Parent = currentLocalVariablesNode,
+                            LocalVariablesDiscovered = new List<LocalVariable>()
+                        };
+
+                        currentLocalVariablesNode = nextLevelLocalVariablesNode;
+                    }
+                    else if (codeBlock.GetType() == typeof(ClosedCurlyBracket))
+                    {
+                        var tempNode = currentLocalVariablesNode.Parent;
+                        currentLocalVariablesNode.LocalVariablesDiscovered.Clear();
+                        currentLocalVariablesNode = tempNode;
+                    }
+
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        // TODO - Extend functionality for cases where the sprite variable itself isn't just a local or global variable, but
+        // instead a property of an object
+        // TODO - should consider the Asset Key as more of 'blob' (ie List<CodeBlock>) rather than just an individual codeblock
+        private static Tuple<CodeBlock, int, int> GetFontForText(CodeFile codeFile, int idx, CodeBlock inputCodeBlock)
+        {
+            var variable = (Variable)inputCodeBlock;
+
+            CodeBlock font = null;
+            int beginCommentIdx = -1;
+            int endCommentIdx = -1;
+
+            for (var i = idx + 1; i < codeFile.Contents.Count; i++)
+            {
+                var codeBlock = codeFile.Contents[i];
+
+                if (codeBlock.GetType().IsSubclassOf(typeof(Variable)))
+                {
+                    if (variable.Name.ToLower() == ((Variable)codeBlock).Name.ToLower())
+                    {
+                        beginCommentIdx = i;
+
+                        var codeBlock2 = codeFile.Contents[i + 1];
+
+                        if (codeBlock2.GetType() == typeof(Dot))
+                        {
+                            var codeBlock3 = codeFile.Contents[i + 2];
+
+                            if (codeBlock3.GetType() == typeof(BasicCodeToken))
+                            {
+                                if (((BasicCodeToken)codeBlock3).Value.ToLower() == "font")
+                                {
+                                    for (var j = i + 3; j < codeFile.Contents.Count; j++)
+                                    {
+                                        var codeBlock4 = codeFile.Contents[j];
+
+                                        if (codeBlock4.GetType() == typeof(WhitespaceCharacter) || codeBlock4.GetType() == typeof(EqualsOperator))
+                                        {
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            font = codeBlock4;
+
+                                            for (var k = j + 1; k < codeFile.Contents.Count; k++)
+                                            {
+                                                var codeBlock5 = codeFile.Contents[k];
+
+                                                if (codeBlock5.GetType() == typeof(Semicolon))
+                                                {
+                                                    endCommentIdx = k;
+                                                    break;
+                                                }
+                                            }
+
+                                            return Tuple.Create<CodeBlock, int, int>(font, beginCommentIdx, endCommentIdx);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return Tuple.Create<CodeBlock, int, int>(null, -1, -1);
+        }
+
+        // TODO - Extend functionality for cases where the scene variable itself isn't just a local or global variable, but
+        // instead a property of an object
+        private static Tuple<Variable, int, int> GetSceneToAddTextTo(CodeFile codeFile, int idx, CodeBlock inputCodeBlock)
+        {
+            var textVariable = (Variable)inputCodeBlock;
+
+            Variable sceneToAddTextTo = null;
+            int beginCommentIdx = -1;
+            int endCommentIdx = -1;
+
+            for (var i = idx + 1; i < codeFile.Contents.Count; i++)
+            {
+                var codeBlock = codeFile.Contents[i];
+
+                if (codeBlock.GetType().IsSubclassOf(typeof(Variable)))
+                {
+                    if (codeBlock.PhaserObjectType == PhaserObjectType.Scene)
+                    {
+                        beginCommentIdx = i;
+                        sceneToAddTextTo = (Variable)codeBlock;
+
+                        var codeBlock2 = codeFile.Contents[i + 1];
+
+                        if (codeBlock2.GetType() == typeof(Dot))
+                        {
+                            var codeBlock3 = codeFile.Contents[i + 2];
+
+                            if (codeBlock3.GetType() == typeof(BasicCodeToken))
+                            {
+                                if (((BasicCodeToken)codeBlock3).Value.ToLower() == "add")
+                                {
+                                    for (var j = i + 3; j < codeFile.Contents.Count; j++)
+                                    {
+                                        var codeBlock4 = codeFile.Contents[j];
+
+                                        if (codeBlock4.GetType() == typeof(WhitespaceCharacter))
+                                        {
+                                            continue;
+                                        }
+
+                                        if (codeBlock4.GetType() == typeof(OpenRoundBracket))
+                                        {
+                                            for (var k = j + 1; k < codeFile.Contents.Count; k++)
+                                            {
+                                                var codeBlock5 = codeFile.Contents[k];
+
+                                                if (codeBlock5.GetType() == typeof(WhitespaceCharacter))
+                                                {
+                                                    continue;
+                                                }
+                                                if (codeBlock5.GetType().IsSubclassOf(typeof(Variable)))
+                                                {
+                                                    if (((Variable)codeBlock5).Name.ToLower() == textVariable.Name.ToLower() || codeBlock5.GetType() == textVariable.GetType())
+                                                    {
+                                                        for (var m = k + 1; m < codeFile.Contents.Count; m++)
+                                                        {
+                                                            var codeBlock6 = codeFile.Contents[m];
+
+                                                            if (codeBlock6.GetType() == typeof(Semicolon))
+                                                            {
+                                                                endCommentIdx = m;
+                                                                break;
+                                                            }
+                                                        }
+
+                                                        return Tuple.Create<Variable, int, int>(sceneToAddTextTo, beginCommentIdx, endCommentIdx);
+                                                    }
+                                                    else
+                                                    {
+                                                        break;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        if (codeBlock4.GetType() == typeof(Semicolon))
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return Tuple.Create<Variable, int, int>(null, -1, -1);
+        }
+
+        // TODO - Extend functionality for cases where the text variable itself isn't just a global variable, but
+        // instead a property of an object
+        // TODO - need to handle for cases where the global variable is re-initialized to a 'new Text()' again later on
+        private static void Process2ndPassForGlobalVariablePhaserTexts()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                // Note that in our case for this function, we simply add the global variables once we come across them the 'first' time,
+                // and then dont worry about processing them again
+                var globalVariablesCollection = new List<GlobalVariable>();
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(GlobalVariable))
+                    {
+                        var globalVariableRef = (GlobalVariable)codeBlock;
+
+                        if (!globalVariablesCollection.Exists(gv => ((GlobalVariable)codeBlock).Name.ToLower() == gv.Name.ToLower()))
+                        {
+                            if (codeBlock.PhaserObjectType == PhaserObjectType.Text)
+                            {
+                                var resultFontTuple = GetFontForText(codeFile, i, codeBlock);
+
+                                if (resultFontTuple.Item1 != null)
+                                {
+                                    if (resultFontTuple.Item2 >= 0)
+                                    {
+                                        codeFile.Contents.Insert(resultFontTuple.Item2 - 1, new CommentBlockBegin());
+                                    }
+
+                                    if (resultFontTuple.Item3 >= 0)
+                                    {
+                                        codeFile.Contents.Insert(resultFontTuple.Item3 + 2, new CommentBlockEnd());
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (var codeFileAssetKeySearch in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+                                    {
+                                        resultFontTuple = GetFontForText(codeFileAssetKeySearch, i, codeBlock);
+
+                                        if (resultFontTuple.Item1 != null)
+                                        {
+                                            if (resultFontTuple.Item2 >= 0)
+                                            {
+                                                codeFileAssetKeySearch.Contents.Insert(resultFontTuple.Item2 - 1, new CommentBlockBegin());
+                                            }
+
+                                            if (resultFontTuple.Item3 >= 0)
+                                            {
+                                                codeFileAssetKeySearch.Contents.Insert(resultFontTuple.Item3 + 2, new CommentBlockEnd());
+                                            }
+
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                var resultSceneToAddThisTextToTuple = GetSceneToAddTextTo(codeFile, i, codeBlock);
+
+                                if (resultSceneToAddThisTextToTuple.Item1 != null)
+                                {
+                                    if (resultSceneToAddThisTextToTuple.Item2 >= 0)
+                                    {
+                                        codeFile.Contents.Insert(resultSceneToAddThisTextToTuple.Item2 - 1, new CommentBlockBegin());
+                                    }
+
+                                    if (resultSceneToAddThisTextToTuple.Item3 >= 0)
+                                    {
+                                        codeFile.Contents.Insert(resultSceneToAddThisTextToTuple.Item3 + 2, new CommentBlockEnd());
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (var codeFileSceneToAddThisSpriteToSearch in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+                                    {
+                                        resultSceneToAddThisTextToTuple = GetSceneToAddTextTo(codeFileSceneToAddThisSpriteToSearch, i, codeBlock);
+
+                                        if (resultSceneToAddThisTextToTuple.Item1 != null)
+                                        {
+                                            if (resultSceneToAddThisTextToTuple.Item2 >= 0)
+                                            {
+                                                codeFileSceneToAddThisSpriteToSearch.Contents.Insert(resultSceneToAddThisTextToTuple.Item2 - 1, new CommentBlockBegin());
+                                            }
+
+                                            if (resultSceneToAddThisTextToTuple.Item3 >= 0)
+                                            {
+                                                codeFileSceneToAddThisSpriteToSearch.Contents.Insert(resultSceneToAddThisTextToTuple.Item3 + 2, new CommentBlockEnd());
+                                            }
+
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                                {
+                                    var codeBlock2 = codeFile.Contents[j];
+
+                                    if (codeBlock2.GetType() == typeof(WhitespaceCharacter) || codeBlock2.GetType() == typeof(EqualsOperator) || codeBlock2.GetType() == typeof(NewOperator))
+                                    {
+                                        continue;
+                                    }
+
+                                    if (codeBlock2.GetType() == typeof(BasicCodeToken))
+                                    {
+                                        if (((BasicCodeToken)codeBlock2).Value.ToLower() == Torque2dConstants.TextSpriteClassName.ToLower())
+                                        {
+                                            for (var k = j + 1; k < codeFile.Contents.Count; k++)
+                                            {
+                                                var codeBlock3 = codeFile.Contents[k];
+
+                                                if (codeBlock3.GetType() == typeof(WhitespaceCharacter))
+                                                {
+                                                    continue;
+                                                }
+
+                                                if (codeBlock3.GetType() == typeof(OpenRoundBracket))
+                                                {
+                                                    if (resultSceneToAddThisTextToTuple.Item1 == null)
+                                                    {
+                                                        codeFile.Contents.InsertRange(k + 1, new List<CodeBlock>
+                                                        {
+                                                            new LocalVariable{ Name = "%undefinedOccurredDuringPhaserConversionForSceneToAddTo", PhaserObjectType = PhaserObjectType.None },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new StringValue { Val = "\"\"" },
+                                                            new Comma(),
+                                                            new OpenCurlyBracket(),
+                                                            new BasicCodeToken { Value = "fontFamily" },
+                                                            new Colon(),
+                                                            resultFontTuple.Item1 == null ? new StringValue { Val = "undefinedOccurredDuringPhaserConversionForFont" } : resultFontTuple.Item1.DeepCopy(),
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "fontSize" },
+                                                            new Colon(),
+                                                            new NumericValue { NumberAsString = "32" }, // TODO: Create some sort of fontSize conversion formula (based on T2D FontSize property) for this line.  Consider adding code to MathConvertUtil and PhaserTextBaseClass
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "color" },
+                                                            new Colon(),
+                                                            new StringValue { Val = "\"#ff0000\"" }, // TODO: Still need to implement how to set Font color
+                                                            new ClosedCurlyBracket(),
+                                                        });
+                                                    }
+                                                    else if (resultSceneToAddThisTextToTuple.Item1.GetType() == typeof(LocalVariable))
+                                                    {
+                                                        codeFile.Contents.InsertRange(k + 1, new List<CodeBlock>
+                                                        {
+                                                            new LocalVariable{ Name = resultSceneToAddThisTextToTuple.Item1.Name, PhaserObjectType = resultSceneToAddThisTextToTuple.Item1.PhaserObjectType },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new StringValue { Val = "\"\"" },
+                                                            new Comma(),
+                                                            new OpenCurlyBracket(),
+                                                            new BasicCodeToken { Value = "fontFamily" },
+                                                            new Colon(),
+                                                            resultFontTuple.Item1 == null ? new StringValue { Val = "undefinedOccurredDuringPhaserConversionForFont" } : resultFontTuple.Item1.DeepCopy(),
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "fontSize" },
+                                                            new Colon(),
+                                                            new NumericValue { NumberAsString = "32" }, // TODO: Create some sort of fontSize conversion formula (based on T2D FontSize property) for this line.  Consider adding code to MathConvertUtil and PhaserTextBaseClass
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "color" },
+                                                            new Colon(),
+                                                            new StringValue { Val = "\"#ff0000\"" }, // TODO: Still need to implement how to set Font color
+                                                            new ClosedCurlyBracket(),
+                                                        });
+                                                    }
+                                                    else if (resultSceneToAddThisTextToTuple.Item1.GetType() == typeof(GlobalVariable))
+                                                    {
+                                                        codeFile.Contents.InsertRange(k + 1, new List<CodeBlock>
+                                                        {
+                                                            new GlobalVariable{ Name = resultSceneToAddThisTextToTuple.Item1.Name, PhaserObjectType = resultSceneToAddThisTextToTuple.Item1.PhaserObjectType },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new NumericValue { NumberAsString = "0" },
+                                                            new Comma(),
+                                                            new StringValue { Val = "\"\"" },
+                                                            new Comma(),
+                                                            new OpenCurlyBracket(),
+                                                            new BasicCodeToken { Value = "fontFamily" },
+                                                            new Colon(),
+                                                            resultFontTuple.Item1 == null ? new StringValue { Val = "undefinedOccurredDuringPhaserConversionForFont" } : resultFontTuple.Item1.DeepCopy(),
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "fontSize" },
+                                                            new Colon(),
+                                                            new NumericValue { NumberAsString = "32" }, // TODO: Create some sort of fontSize conversion formula (based on T2D FontSize property) for this line.  Consider adding code to MathConvertUtil and PhaserTextBaseClass
+                                                            new Comma(),
+                                                            new BasicCodeToken { Value = "color" },
+                                                            new Colon(),
+                                                            new StringValue { Val = "\"#ff0000\"" }, // TODO: Still need to implement how to set Font color
+                                                            new ClosedCurlyBracket(),
+                                                        });
+                                                    }
+
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                if (!globalVariablesCollection.Exists(gv => ((GlobalVariable)codeBlock).Name.ToLower() == gv.Name.ToLower()))
+                                {
+                                    globalVariablesCollection.Add((GlobalVariable)codeBlock);
+                                }
+                            }
+                        }
+                    }
+
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
     }
 }

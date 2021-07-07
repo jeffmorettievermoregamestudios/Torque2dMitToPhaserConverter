@@ -16,7 +16,16 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 
         public override string ConvertToCode()
         {
-            string mainCodeString = File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\StubProject.txt");
+            string mainCodeString;
+
+            if (GlobalVars.PhaserAssetRepo.PhaserCssFontFaceStyleList.Count > 0)
+            {
+                mainCodeString = File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\StubProjectWithWebFont.txt");
+            }
+            else
+            {
+                mainCodeString = File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\StubProject.txt");
+            }
 
             mainCodeString = mainCodeString.Replace("**{HTML_HEAD_ELEMENT}**", GenerateHtmlHeadElement());
 
@@ -36,8 +45,22 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 
             mainCodeString = mainCodeString.Replace("**{PHASER_SCENES}**", sceneListString);
 
-            //mainCodeString = mainCodeString.Replace("**{INIT_CODE}**", (new CssFontFaceStylesTemplate()).ConvertToCode());
-            mainCodeString = mainCodeString.Replace("**{INIT_CODE}**", "");
+            if (GlobalVars.PhaserAssetRepo.PhaserCssFontFaceStyleList.Count > 0)
+            {
+                mainCodeString = mainCodeString.Replace("**{INIT_CODE_STYLES}**", new CssFontFaceStylesTemplate().ConvertToCode());
+
+                var webFontsString = "[";
+
+                foreach (var webFont in GlobalVars.PhaserAssetRepo.PhaserCssFontFaceStyleList)
+                {
+                    webFontsString += " \"" + webFont.Name + "\",";
+                }
+
+                webFontsString = webFontsString.Substring(0, webFontsString.Length - 1);
+                webFontsString += " ]";
+
+                mainCodeString = mainCodeString.Replace("**{WEBFONTS}**", webFontsString);
+            }
 
             var mainModuleCreateFunctionCallAsString = "let " + GlobalVars.StartingPointVariableName + " = new " + GlobalVars.Torque2dProjectModuleName + "();\n";
             mainModuleCreateFunctionCallAsString +=
@@ -63,7 +86,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
             result += $"<script src='{GlobalVars.PhaserGlobalVarsFolder}/{GlobalVars.PhaserGlobalVarsFilename}'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SpriteBaseClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SceneBaseClass.js'></script>\n";
-            result += $"<script src='{GlobalVars.PhaserClassesFolder}/BitmapTextBaseClass.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserClassesFolder}/PhaserTextBaseClass.js'></script>\n";
 
             foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
             {

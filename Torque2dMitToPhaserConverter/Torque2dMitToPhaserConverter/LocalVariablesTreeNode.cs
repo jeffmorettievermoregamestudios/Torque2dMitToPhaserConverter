@@ -57,5 +57,18 @@ namespace Torque2dMitToPhaserConverter
 
             return null;
         }
+
+        public void SetClassForLocalVariables(LocalVariable localVariableWithClass)
+        {
+            if (this.LocalVariablesDiscovered.FirstOrDefault(lv => lv.Name.ToLower() == localVariableWithClass.Name.ToLower()) != null)
+            {
+                this.LocalVariablesDiscovered.FirstOrDefault(lv => lv.Name.ToLower() == localVariableWithClass.Name.ToLower()).Class = localVariableWithClass.Class;
+            }
+
+            if (this.Parent != null)
+            {
+                Parent.SetClassForLocalVariables(localVariableWithClass);
+            }
+        }
     }
 }

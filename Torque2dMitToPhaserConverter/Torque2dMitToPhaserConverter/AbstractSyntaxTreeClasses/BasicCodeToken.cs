@@ -45,7 +45,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 
                 // WARNING!!! This is a 'naive' approach to just simply rename all tokens labelled 'update' to 'torque2dUpdate' (to prevent clashes
                 // with say, the way that this code converter has to convert 'onSceneUpdate' to 'update').  This could definitely be smarter,
-                // but I think for now it will work :)
+                // but I think for now it will work
                 if (Value.ToLower() == "update")
                 {
                     return "torque2dUpdate";
@@ -73,9 +73,6 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
             }
 
             return Value;
-
-            // TODO: use .setTexture to assign spritesheet to a sprite (ie for Torque2d .Animation)
-            // NOTE: can also use .setTexture to assign Torque2d .Image
         }
     }
 }

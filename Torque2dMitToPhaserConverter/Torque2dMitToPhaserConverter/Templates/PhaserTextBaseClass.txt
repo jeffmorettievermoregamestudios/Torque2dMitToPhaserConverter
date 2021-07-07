@@ -1,14 +1,15 @@
-﻿class BitmapTextBaseClass extends Phaser.GameObjects.BitmapText {
+﻿class PhaserTextBaseClass extends Phaser.GameObjects.Text {
 
-constructor (scene, x, y, font)
+constructor (scene, x, y, text, style)
 {
-    super(scene, x, y, font);
+    super(scene, x, y, text, style);
+	scene.add.existing(this);
 }
 
 getPosition() {
 
-	// return a Vector2 with this objects OriginX and OriginY
-	return new Vector2(this.originX, this.originY);
+	// return a Vector2 with this objects X and Y co-ordinate
+	return new Vector2(this.x, this.y);
 }
 
 setSize(width, height) {

@@ -24,7 +24,7 @@ namespace Torque2dMitToPhaserConverter
 
             if (torque2dClassStringToLower == Torque2dConstants.TextSpriteClassName.ToLower())
             {
-                return PhaserConstants.BitmapTextBaseClassName;
+                return PhaserConstants.PhaserTextBaseClassName;
             }
 
             if (torque2dClassStringToLower == Torque2dConstants.SceneObjectClassName.ToLower())

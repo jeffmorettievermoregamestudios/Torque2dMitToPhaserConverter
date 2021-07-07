@@ -9,5 +9,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
     public abstract class Variable : CodeBlock
     {
         public string Name { get; set; }
+
+        public string Class { get; set; }
     }
 }

@@ -1,6 +1,16 @@
 # Torque2dMitToPhaserConverter
 
-Current Version:  v0.0.6
+Current Version:  v0.1.0
+
+CHANGELOG:
+
+v0.1.0
+- Animations are now 75% functional
+- Much better support for Text objects!  Text is now 75% functional
+- NOTE: Removed BitmapText objects, replaced with Text (ie Phaser.GameObject.Text) objects
+- NOTE: Also note that removing BitmapText objects means that now Text objects are supported
+with loading via the Google WebFont Loader when loading fonts in (and bitmap fonts are no longer
+used)
 
 CHANGELOG:
 

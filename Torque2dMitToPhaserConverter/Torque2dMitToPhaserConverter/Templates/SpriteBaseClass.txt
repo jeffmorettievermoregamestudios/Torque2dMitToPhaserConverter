@@ -8,8 +8,8 @@ constructor (scene, x, y, texture)
 
 getPosition() {
 
-	// return a Vector2 with this objects OriginX and OriginY
-	return new Vector2(this.originX, this.originY);
+	// return a Vector2 with this objects X and Y co-ordinate
+	return new Vector2(this.x, this.y);
 }
 
 setSize(width, height) {
