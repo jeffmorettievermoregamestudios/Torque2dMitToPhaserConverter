@@ -10,7 +10,8 @@ v0.1.0
 - NOTE: Removed BitmapText objects, replaced with Text (ie Phaser.GameObject.Text) objects
 - NOTE: Also note that removing BitmapText objects means that now Text objects are supported
 with loading via the Google WebFont Loader when loading fonts in (and bitmap fonts are no longer
-used)
+used).  This means that you must include the webfont.js file into the root of your solution for
+it to work!
 
 CHANGELOG:
 
