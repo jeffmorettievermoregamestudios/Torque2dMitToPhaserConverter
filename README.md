@@ -149,6 +149,20 @@ free to try other web server options if you wish).
 
 <br />
 
+<p><b>11. INCLUDE THE webfont.js FILE INTO THE ROOT FOLDER OF YOUR OUTPUT DIRECTORY</b></p>
+<p>
+You also need to include the webfont.js file into your repo.  Either download the webfont.js file from the following URL:
+<br />
+<a href="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js">https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js</a>
+<br />
+<br />
+Or include it in your project in the following way (and overwrite the previous webfont.js script include, in index.html, while doing so):
+<br />
+&lt;script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js"&gt;&lt;/script&gt;
+</p>
+
+<br />
+
 <p>Hopefully the tips above will answer some of the questions you may have when running the Torque2dMitToPhaserConverter.
 However, if you still need more help feel free to email me at <span style="text-decoration: underline;">jeffmoretti@evermoregamestudios.com</span>.
 </p>
