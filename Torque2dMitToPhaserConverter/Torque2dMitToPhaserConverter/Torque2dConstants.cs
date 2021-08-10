@@ -12,5 +12,7 @@ namespace Torque2dMitToPhaserConverter
         public const string SpriteClassName = "Sprite";
         public const string TextSpriteClassName = "TextSprite";
         public const string SceneObjectClassName = "SceneObject";
+        public const string SimObjectClassName = "SimObject";
+        public const string SimSetClassName = "SimSet";
     }
 }

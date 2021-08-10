@@ -11,6 +11,10 @@ namespace Torque2dMitToPhaserConverter
 {
     public static class GlobalVars
     {
+        // Legacy switch for upconverting legacy T2D 'objects' to their newer Torque 2D MIT counterpart
+        // (ie like changing a reference from a t2dSceneObject to instead a SceneObject).  This will then
+        // allow the converter to properly handle this items later on
+        public static bool PerformUpconversionFromOlderTorqueObjects = true;
         public static bool IsProcessingConversion { get; set; }
 
         public static string Torque2dProjectModulesFolder { get; set; }

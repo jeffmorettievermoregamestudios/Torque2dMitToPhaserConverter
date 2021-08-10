@@ -1,0 +1,68 @@
+﻿class PhaserSimSetClass extends Object {
+
+// Note that a lot of functionality in this class assumes we can identify elements in the 'PhaserSimSet'
+// via reference.  Not sure how effective this, but hopefully it will work anyways
+
+constructor ()
+{
+    super();
+    this.container = [];
+}
+
+getCount()
+{
+    return this.container.length;
+}
+
+add(item)
+{
+    this.container.push(item);
+}
+
+getObject(idx)
+{
+    return this.container[idx];
+}
+
+remove(item)
+{
+    for (var i = 0; i < this.container.length; i++)
+    {
+        if (this.container[i] == item)
+        {
+            this.container.splice(i, 1);
+            return;
+        }
+    }
+}
+
+reorderChild(child1, child2)
+{
+    var foundChild1 = false;
+
+    for (var i = 0; i < this.container.length; i++)
+    {
+        if (this.container[i] == child1)
+        {
+            foundChild1 = true;
+            this.container.splice(i, 1);
+            break;
+        }
+    }
+
+    if (!foundChild1)
+    {
+        return;
+    }
+
+    for (var i = 0; i < this.container.length; i++)
+    {
+        if (this.container[i] == child2)
+        {
+            this.container.splice(i, 0, child1);
+            return;
+        }
+    }
+}
+
+}

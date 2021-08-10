@@ -4,13 +4,26 @@ constructor (config)
 {
     super(config);
 	this.enabled = false;
+	this.timestampCreatedAt = new Date();
+	this.spriteList = new PhaserSimSetClass(); // note the PhaserSimSetClass was chosen just due to convenience :) This field is not 'directly' needed for the conversion
 }
 
-update ()
+getSceneTime()
+{
+	return Math.abs((new Date().getTime() - this.timestampCreatedAt.getTime()) / 1000);
+}
+
+update (time, delta)
 {
 	if (this.enabled)
 	{
-		super.update();
+		for (var i = 0; i < this.spriteList.getCount(); i++)
+		{
+			var sprite = this.spriteList.getObject(i);
+			sprite.extraUpdate(time, delta);
+		}
+
+		super.update(time, delta);
 	}
 }
 

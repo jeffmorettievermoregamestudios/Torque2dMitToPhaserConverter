@@ -6,6 +6,11 @@
 		  resolve();
 		}, x);
 	  });
+	},
+
+	degToRad : function (deg) {
+		var pi = Math.PI;
+		return deg * (pi/180);
 	}
 
 }

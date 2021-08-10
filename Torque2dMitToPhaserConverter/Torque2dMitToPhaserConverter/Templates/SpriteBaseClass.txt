@@ -3,13 +3,24 @@
 constructor (scene, x, y, texture)
 {
     super(scene, x, y, texture);
+	this.angularVelocity = 0;
+	this.linearVelocityX = 0;
+	this.linearVelocityY = 0;
 	scene.add.existing(this);
+	scene.spriteList.add(this);
 }
 
 getPosition() {
+	// return a vector with this objects X and Y co-ordinate
+	return this.getPositionX() + " " + this.getPositionY();
+}
 
-	// return a Vector2 with this objects X and Y co-ordinate
-	return new Vector2(this.x, this.y);
+getPositionX() {
+	return MathConvertUtil.convertToT2dX(this.x);
+}
+
+getPositionY() {
+	return MathConvertUtil.convertToT2dY(this.y);
 }
 
 setSize(width, height) {
@@ -17,8 +28,48 @@ setSize(width, height) {
 }
 
 setPosition(x, y) {
+	this.setPositionX(x);
+	this.setPositionY(y);
+}
+
+setPositionX(x) {
 	this.x = MathConvertUtil.convertToPhaserX(x);
+}
+
+setPositionY(y) {
 	this.y = MathConvertUtil.convertToPhaserY(y);
+}
+
+setAngle(angleInDegrees) {
+	super.setAngle(angleInDegrees);
+}
+
+setAngularVelocity(angVelo) {
+	this.angularVelocity = angVelo;
+}
+
+setLinearVelocityX(veloX) {
+	this.linearVelocityX = MathConvertUtil.convertToPhaserX(veloX);
+}
+
+setLinearVelocityY(veloY) {
+	this.linearVelocityY = MathConvertUtil.convertToPhaserX(veloY);
+}
+
+setLinearVelocity(veloAsVector) {
+	this.setLinearVelocityX(T2dFunctionsUtil.getWord(veloAsVector, 0));
+	this.setLinearVelocityY(T2dFunctionsUtil.getWord(veloAsVector, 1));
+}
+
+setLinearVelocity(veloX, veloY) {
+	this.setLinearVelocityX(veloX);
+	this.setLinearVelocityY(veloY);
+}
+
+extraUpdate(time, delta) {
+	this.angle += (delta / 1000) * this.angularVelocity;
+	this.x += (delta / 100) * this.linearVelocityX;
+	this.y += (delta / 100) * this.linearVelocityY;
 }
 
 }

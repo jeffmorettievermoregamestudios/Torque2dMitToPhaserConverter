@@ -12,7 +12,9 @@ namespace Torque2dMitToPhaserConverter
         public const string SceneBaseClassName = "SceneBaseClass";
         public const string SpriteBaseClassName = "SpriteBaseClass";
         public const string PhaserTextBaseClassName = "PhaserTextBaseClass";
-        public const string ObjectClassName = "Object";
+        public const string PhaserSceneObjectClassName = "PhaserSceneObjectClass";
+        public const string PhaserSimObjectClassName = "PhaserSimObjectClass";
+        public const string PhaserSimSetClassName = "PhaserSimSetClass";
 
         public const string T2dToPhaserRunSceneTodoMarker = "T2DTOPHASER_RUNSCENE_TODO";
         public const string CallbackNameSuffix = "_T2DTOPHASER_Callback";

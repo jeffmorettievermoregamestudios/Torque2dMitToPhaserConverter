@@ -1,0 +1,17 @@
+﻿var GeneralUtil = {
+
+	t2dGetRandom : function() {
+		return Math.random();
+	},
+
+	t2dGetRandomMax : function(maxNumVal) {
+		var temp = Math.random() * (maxNumVal + 1);
+		return Math.floor(temp);
+	},
+
+	t2dGetRandomMinMax : function(minNumVal, maxNumVal) {
+		var temp = Math.random() * ((maxNumVal - minNumVal) + 1);
+		return Math.floor(temp) + minNumVal;
+	}
+
+}

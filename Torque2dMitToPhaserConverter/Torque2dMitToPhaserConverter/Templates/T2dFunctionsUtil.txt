@@ -1,0 +1,61 @@
+﻿var T2dFunctionsUtil = {
+
+	getWord : function(inputString, index) {
+		return inputString.split(" ")[index];
+	},
+
+	VectDist : function (vecA, vecB) {
+		
+		var xA = this.getWord(vecA, 0);
+		var xB = this.getWord(vecB, 0);
+
+		var yA = this.getWord(vecA, 1);
+		var yB = this.getWord(vecB, 1);
+
+		var deltaX = xA - xB;
+		var deltaY = yA - yB;
+
+		return Math.sqrt( (deltaX * deltaX) + (deltaY * deltaY) );
+	},
+
+	VectorNormalize : function (vec) {
+
+		var magnitude = this.VectDist(vec, "0 0");
+		
+		var x = this.getWord(vec, 0);
+		var y = this.getWord(vec, 1);
+
+		var xNorm = x / magnitude;
+		var yNorm = y / magnitude;
+
+		// NOTE: The zero at the end is because I found that Torque seems to always return a 3D vector when using
+		// VectorNormalize.  Will do the same here to replicate the same behaviour
+		return xNorm.toString() + " " + yNorm.toString() + " 0";
+	},
+
+	VectorScale : function (vec, scalingVal) {
+		
+		var xScaled = this.getWord(vec, 0) * scalingVal;
+		var yScaled = this.getWord(vec, 1) * scalingVal;
+
+		// NOTE: The zero at the end is because I found that Torque seems to always return a 3D vector when using
+		// VectorScale.  Will do the same here to replicate the same behaviour
+		return xScaled.toString() + " " + yScaled.toString() + " 0";
+	},
+
+	VectorSub : function (vecA, vecB) {
+
+		var x = this.getWord(vecA, 0) - this.getWord(vecB, 0);
+		var y = this.getWord(vecA, 1) - this.getWord(vecB, 1);
+
+		return x.toString() + " " + y.toString();
+	},
+
+	mSin : function (deg) {
+		return Math.sin(JavascriptUtil.degToRad(deg));
+	},
+
+	mCos : function (deg) {
+		return Math.cos(JavascriptUtil.degToRad(deg));
+	}
+}

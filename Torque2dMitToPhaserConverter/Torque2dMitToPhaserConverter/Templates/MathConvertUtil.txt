@@ -24,5 +24,20 @@
 	convertToPhaserHeight : function (t2dHeight) {
 		
 		return (t2dHeight) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
+	},
+
+	convertToPhaserFontSize : function (t2dFontSize) {
+
+		return 	(t2dFontSize) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
+	},
+
+	convertToT2dX : function (phaserX) {
+
+		return (phaserX * (this.torque2dCameraSizeWidth / this.phaserProjectWidth)) - (this.torque2dCameraSizeWidth / 2);
+	},
+
+	convertToT2dY : function (phaserY) {
+
+		return (this.torque2dCameraSizeHeight / 2) - (phaserY * (this.torque2dCameraSizeHeight / this.phaserProjectHeight));
 	}
 }

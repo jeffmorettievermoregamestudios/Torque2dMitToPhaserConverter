@@ -1,6 +1,12 @@
 # Torque2dMitToPhaserConverter
 
-Current Version:  v0.1.0
+Current Version:  v0.1.1
+
+CHANGELOG:
+
+v0.1.1
+- Positioning/Sizing of Text objects has been fixed/improved
+- lots of utility/math functions now implemented/converted
 
 CHANGELOG:
 

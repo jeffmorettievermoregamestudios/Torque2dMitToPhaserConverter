@@ -1,0 +1,8 @@
+﻿class PhaserSimObjectClass extends Object {
+
+constructor ()
+{
+    super();
+}
+
+}

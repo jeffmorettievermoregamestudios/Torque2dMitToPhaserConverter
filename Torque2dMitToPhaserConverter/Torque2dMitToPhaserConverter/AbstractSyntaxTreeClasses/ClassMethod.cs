@@ -8,9 +8,6 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 {
     public class ClassMethod : CodeBlock
     {
-        // NOTE: Will have to specially handle all class methods at the end (ie need to pair up all class
-        // methods with matching 'ClassName's etc)
-
         public string ClassName { get; set; }
         public string MethodName { get; set; }
         

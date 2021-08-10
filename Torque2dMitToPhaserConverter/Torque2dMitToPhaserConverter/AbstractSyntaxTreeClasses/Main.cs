@@ -62,6 +62,8 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
                 mainCodeString = mainCodeString.Replace("**{WEBFONTS}**", webFontsString);
             }
 
+            // TODO JLM - add ScenePreload code (ie loading of assets) here (?)
+
             var mainModuleCreateFunctionCallAsString = "let " + GlobalVars.StartingPointVariableName + " = new " + GlobalVars.Torque2dProjectModuleName + "();\n";
             mainModuleCreateFunctionCallAsString +=
                 GlobalVars.StartingPointVariableName + ".create();";
@@ -83,10 +85,15 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/JavascriptUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/MathConvertUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/SceneUtil.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserUtilFolder}/GeneralUtil.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserUtilFolder}/T2dFunctionsUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserGlobalVarsFolder}/{GlobalVars.PhaserGlobalVarsFilename}'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SpriteBaseClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SceneBaseClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/PhaserTextBaseClass.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserClassesFolder}/PhaserSceneObjectClass.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserClassesFolder}/PhaserSimObjectClass.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserClassesFolder}/PhaserSimSetClass.js'></script>\n";
 
             foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
             {

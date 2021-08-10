@@ -6,8 +6,8 @@ namespace Torque2dMitToPhaserConverter
 {
     public partial class FormTorque2dToPhaserConverter : Form
     {
-        // NOTE TO DEVELOPERS - Can set this to false to disabled the Please Wait dialog popup
-        private static bool enablePleaseWaitDialog = false;
+        // NOTE TO DEVELOPERS - Can set this to false to disable the Please Wait dialog popup
+        private static bool enablePleaseWaitDialog = true;
         private FormPleaseWait frmPleaseWait = new FormPleaseWait();
 
         public FormTorque2dToPhaserConverter()

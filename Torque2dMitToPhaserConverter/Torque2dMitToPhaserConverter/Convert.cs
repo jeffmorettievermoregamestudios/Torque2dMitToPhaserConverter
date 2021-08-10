@@ -29,7 +29,17 @@ namespace Torque2dMitToPhaserConverter
 
             if (torque2dClassStringToLower == Torque2dConstants.SceneObjectClassName.ToLower())
             {
-                return PhaserConstants.ObjectClassName;
+                return PhaserConstants.PhaserSceneObjectClassName;
+            }
+
+            if (torque2dClassStringToLower == Torque2dConstants.SimObjectClassName.ToLower())
+            {
+                return PhaserConstants.PhaserSimObjectClassName;
+            }
+
+            if (torque2dClassStringToLower == Torque2dConstants.SimSetClassName.ToLower())
+            {
+                return PhaserConstants.PhaserSimSetClassName;
             }
 
             return "CouldNotDetermineClassName";

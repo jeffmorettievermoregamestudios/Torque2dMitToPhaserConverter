@@ -65,6 +65,11 @@ namespace Torque2dMitToPhaserConverter
             // 2) Process all other .cs script files
             ProcessAllTorque2dTorquescriptFiles();
 
+            if (GlobalVars.PerformUpconversionFromOlderTorqueObjects)
+            {
+                PerformUpconversionFromOlderTorqueObjects();
+            }
+
             // 3) Perform a 2nd pass over the Code Files and process again as necessary
             bool finished2ndPasses = false;
 
@@ -125,6 +130,9 @@ namespace Torque2dMitToPhaserConverter
 
             // performs a 2nd pass for converting all 'SceneLayer' values (flips them to negative values, ie similar to multiplying by -1)
             Process2ndPassForSceneLayerValues();
+
+            // process converting getRandom function calls
+            ProcessConvertingGetRandomFunctionCalls();
 
             // 4) Process classes/methods in torquescript files.  Will also remove the class methods etc from the object 
             //    model (so they are not generated later when generating the converted torquescript files)
@@ -1773,7 +1781,7 @@ namespace Torque2dMitToPhaserConverter
             preloadFunction.Contents = functionContents;
             preloadFunction.CanWriteAsEmptyFunction = true;
 
-            var preloadFunctionComment = "\n\n\n\n\n\n// NOTE: For Phaser Text Objects, you don't need to preload these assets but you do need to copy the necessary ttf (or, perhaps other font file if you decide to) files to the assets/fonts/ttf directory.\n";
+            var preloadFunctionComment = "\n\n\n\n\n\n// NOTE: For Phaser Text Objects, you don't need to preload such assets but you do need to copy the necessary ttf (or, perhaps other font file if you decide to) files to the assets/fonts/ttf directory.\n";
 
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, "preload.js"), preloadFunctionComment + preloadFunction.ConvertToCode());
         }
@@ -1809,6 +1817,14 @@ namespace Torque2dMitToPhaserConverter
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserUtilFolder, "SceneUtil.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SceneUtil.txt"));
 
+            // GeneralUtil.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserUtilFolder, "GeneralUtil.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\GeneralUtil.txt"));
+
+            // T2dFunctionsUtil.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserUtilFolder, "T2dFunctionsUtil.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\T2dFunctionsUtil.txt"));
+
             // SceneBaseClass.js
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "SceneBaseClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SceneBaseClass.txt"));
@@ -1820,6 +1836,18 @@ namespace Torque2dMitToPhaserConverter
             // PhaserTextBaseClass.js
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "PhaserTextBaseClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\PhaserTextBaseClass.txt"));
+
+            // PhaserSceneObjectClass.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "PhaserSceneObjectClass.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\PhaserSceneObjectClass.txt"));
+
+            // PhaserSimObjectClass.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "PhaserSimObjectClass.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\PhaserSimObjectClass.txt"));
+
+            // PhaserSimSetClass.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "PhaserSimSetClass.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\PhaserSimSetClass.txt"));
         }
 
         private static void CompileListOfScenesCreatedInOurGameAndDoMoreSceneProcessing()
@@ -4198,5 +4226,148 @@ namespace Torque2dMitToPhaserConverter
             GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
         }
 
+        public static void PerformUpconversionFromOlderTorqueObjects()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(BasicCodeToken))
+                    {
+                        // EX: convert t2dSceneObject to SceneObject.
+                        // Later will also have a class PhaserSceneObject (that will probably extend a basic javascript Object)
+                        if (((BasicCodeToken)codeBlock).Value.ToLower() == OldTorque2dConstants.SceneObjectClassName.ToLower())
+                        {
+                            ((BasicCodeToken)codeBlock).Value = Torque2dConstants.SceneObjectClassName;
+                        }
+                    }
+                    
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        public static void ProcessConvertingGetRandomFunctionCalls()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(BasicCodeToken))
+                    {
+                        if (((BasicCodeToken)codeBlock).Value.ToLower() == "getrandom")
+                        {
+                            var hasAtLeastOneParameter = false;
+                            var hasAtLeastTwoParameters = false;
+
+                            var openRoundBracketCount = 0;
+
+                            for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                            {
+                                var codeBlock2 = codeFile.Contents[j];
+
+                                if (codeBlock2.GetType() == typeof(OpenRoundBracket))
+                                {
+                                    openRoundBracketCount++;
+                                }
+                                else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                                {
+                                    if (openRoundBracketCount > 1)
+                                    {
+                                        openRoundBracketCount--;
+                                        continue;
+                                    }
+
+                                    ((BasicCodeToken)codeBlock).Value = "GeneralUtil";
+
+                                    // conclude conversion
+                                    if (hasAtLeastTwoParameters)
+                                    {
+                                        codeFile.Contents.InsertRange(i + 1, new List<CodeBlock>
+                                        {
+                                            new Dot(),
+                                            new BasicCodeToken { Value = "t2dGetRandomMinMax" }
+                                        });
+
+                                        break;
+                                    }
+                                    else if (hasAtLeastOneParameter)
+                                    {
+                                        codeFile.Contents.InsertRange(i + 1, new List<CodeBlock>
+                                        {
+                                            new Dot(),
+                                            new BasicCodeToken { Value = "t2dGetRandomMax" }
+                                        });
+
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        codeFile.Contents.InsertRange(i + 1, new List<CodeBlock>
+                                        {
+                                            new Dot(),
+                                            new BasicCodeToken { Value = "t2dGetRandom" }
+                                        });
+
+                                        break;
+                                    }
+                                }
+                                else if (codeBlock2.GetType() == typeof(NumericValue))
+                                {
+                                    if (openRoundBracketCount < 2)
+                                    {
+                                        hasAtLeastOneParameter = true;
+                                    }
+                                }
+                                else if (codeBlock2.GetType() == typeof(BasicCodeToken))
+                                {
+                                    if (openRoundBracketCount < 2)
+                                    {
+                                        hasAtLeastOneParameter = true;
+                                    }
+                                }
+                                else if (codeBlock2.GetType() == typeof(Comma))
+                                {
+                                    if (openRoundBracketCount < 2)
+                                    {
+                                        hasAtLeastTwoParameters = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
     }
 }

@@ -8,6 +8,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 {
     public enum PhaserObjectType
     {
+        /*Integer, Float*/
         None, Scene, Sprite, Text
     }
 }

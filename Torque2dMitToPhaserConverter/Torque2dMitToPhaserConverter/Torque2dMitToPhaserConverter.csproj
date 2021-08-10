@@ -139,6 +139,7 @@
     </Compile>
     <Compile Include="GlobalVars.cs" />
     <Compile Include="LocalVariablesTreeNode.cs" />
+    <Compile Include="OldTorque2dConstants.cs" />
     <Compile Include="PhaserAssetLibrary.cs" />
     <Compile Include="PhaserAssetRepo.cs" />
     <Compile Include="PhaserClass.cs" />
@@ -186,7 +187,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Templates\GeneralUtil.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Templates\MathConvertUtil.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\PhaserSimObjectClass.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Templates\SceneBaseClass.txt">
@@ -208,6 +215,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Templates\StubProjectWithWebFont.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\PhaserSceneObjectClass.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\T2dFunctionsUtil.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\PhaserSimSetClass.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

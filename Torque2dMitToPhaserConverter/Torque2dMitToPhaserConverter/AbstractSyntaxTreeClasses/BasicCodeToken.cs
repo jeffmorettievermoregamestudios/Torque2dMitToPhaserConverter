@@ -45,7 +45,7 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
 
                 // WARNING!!! This is a 'naive' approach to just simply rename all tokens labelled 'update' to 'torque2dUpdate' (to prevent clashes
                 // with say, the way that this code converter has to convert 'onSceneUpdate' to 'update').  This could definitely be smarter,
-                // but I think for now it will work
+                // but I think for now it will work :)
                 if (Value.ToLower() == "update")
                 {
                     return "torque2dUpdate";
@@ -61,14 +61,49 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
                     return "torque2dPreload";
                 }
 
-                if (Value.ToLower() == "vectordist")
-                {
-                    return "Distance.BetweenPoints";
-                }
-
                 if (Value.ToLower() == "scenelayer")
                 {
                     return "depth";
+                }
+
+                if (Value.ToLower() == "mAbs")
+                {
+                    return "Math.abs";
+                }
+
+                if (Value.ToLower() == "getWord")
+                {
+                    return "T2dFunctionsUtil.getWord";
+                }
+
+                if (Value.ToLower() == "VectDist")
+                {
+                    return "T2dFunctionsUtil.VectDist";
+                }
+
+                if (Value.ToLower() == "VectorNormalize")
+                {
+                    return "T2dFunctionsUtil.VectorNormalize";
+                }
+
+                if (Value.ToLower() == "VectorScale")
+                {
+                    return "T2dFunctionsUtil.VectorScale";
+                }
+
+                if (Value.ToLower() == "VectorSub")
+                {
+                    return "T2dFunctionsUtil.VectorSub";
+                }
+
+                if (Value.ToLower() == "mSin")
+                {
+                    return "T2dFunctionsUtil.mSin";
+                }
+
+                if (Value.ToLower() == "mCos")
+                {
+                    return "T2dFunctionsUtil.mCos";
                 }
             }
 

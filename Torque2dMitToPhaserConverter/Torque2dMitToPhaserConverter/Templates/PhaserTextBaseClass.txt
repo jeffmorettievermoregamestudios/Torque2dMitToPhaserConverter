@@ -7,20 +7,32 @@ constructor (scene, x, y, text, style)
 }
 
 getPosition() {
+	// return a vector with this objects X and Y co-ordinate
+	return this.getPositionX() + " " + this.getPositionY();
+}
 
-	// return a Vector2 with this objects X and Y co-ordinate
-	return new Vector2(this.x, this.y);
+getPositionX() {
+	return MathConvertUtil.convertToT2dX(this.x);
+}
+
+getPositionY() {
+	return MathConvertUtil.convertToT2dY(this.y);
 }
 
 setSize(width, height) {
-	//this.setDisplaySize(MathConvertUtil.convertToPhaserWidth(width), MathConvertUtil.convertToPhaserHeight(height));
-
-	// TODO
+	super.setSize(MathConvertUtil.convertToPhaserWidth(width), MathConvertUtil.convertToPhaserHeight(height));
 }
 
+// NOTE: Besides setting position, you can use the Phaser method setAlign([align]) to align your text
+// as either 'left', 'right', 'center', or 'justify'.  Note that this needs to be implemented manually in 
+// your output code
 setPosition(x, y) {
 	this.x = MathConvertUtil.convertToPhaserX(x);
 	this.y = MathConvertUtil.convertToPhaserY(y);
+}
+
+setFontSize(size) {
+	super.setFontSize(MathConvertUtil.convertToPhaserFontSize(size));
 }
 
 }
