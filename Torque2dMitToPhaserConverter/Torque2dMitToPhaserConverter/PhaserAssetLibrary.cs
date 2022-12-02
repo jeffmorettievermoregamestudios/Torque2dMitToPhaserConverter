@@ -37,6 +37,12 @@ namespace Torque2dMitToPhaserConverter
                         result.Add(GenerateImageAsset(t2dImageAsset));
                     }
                 }
+                else if (torque2dAsset.GetType() == typeof(Torque2dAudioAsset))
+                {
+                    var t2dAudioAsset = (Torque2dAudioAsset)torque2dAsset;
+
+                    result.Add(GenerateAudioAsset(t2dAudioAsset));
+                }
             }
 
             return result;
@@ -113,6 +119,21 @@ namespace Torque2dMitToPhaserConverter
             {
                 Name = torque2dFontAsset.Name,
                 ResourceUrl = resourceUrl
+            };
+
+            return result;
+        }
+
+        public static AudioAsset GenerateAudioAsset(Torque2dAudioAsset t2dAudioAsset)
+        {
+            var resourceUrl = GetResourceUrl(t2dAudioAsset);
+
+            var result = new AudioAsset()
+            {
+                AssetKey = t2dAudioAsset.Name,
+                IsLooping = t2dAudioAsset.Looping.HasValue ? t2dAudioAsset.Looping.Value : false,
+                ResourceUrl = resourceUrl,
+                Torque2dAssetFileReference = t2dAudioAsset.AssetFile
             };
 
             return result;

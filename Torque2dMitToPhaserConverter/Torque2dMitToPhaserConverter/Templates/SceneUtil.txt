@@ -1,12 +1,45 @@
 ﻿var SceneUtil = {
 
-	runScene : async function(sceneKey, callback)
+	runScene : async function(sceneKey, callback, arrayOfExtraScenesToWaitFor)
 	{
+		// TODO FOR DEVELOPERS - you must either create, and populate, the 'removedScenes' array.  Or, if not, then comment out this code
+		// ALSO NOTE - 'removedScenes' are not actually removed (ie not removed using game.scene.remove(sceneKey) ).  Instead, removedScenes are ones that I have disabled via setting the 'enabled' property to false
+		
+		var scenePreviouslyRemovedIndex = -1;
+		
+		for (var i = 0; i < removedScenes.length; i++)
+		{
+			if (removedScenes[i] === sceneKey)
+			{
+				scenePreviouslyRemovedIndex = i;
+				break;
+			}
+		}
+		
+		if (scenePreviouslyRemovedIndex >= 0)
+		{		
+			game.scene.getScene(sceneKey).extraRestartScene();
+			removedScenes.splice(scenePreviouslyRemovedIndex, 1);
+		}
+		
+		// END TODO
+			
 		game.scene.run(sceneKey);
-	
+			
 		while (!game.scene.isActive(sceneKey))
 		{
 			await JavascriptUtil.resolveAfterXMilliseconds(100);
+		}
+		
+		if (arrayOfExtraScenesToWaitFor)
+		{
+			for (var i = 0; i < arrayOfExtraScenesToWaitFor.length; i++)
+			{
+				while (!game.scene.isActive(arrayOfExtraScenesToWaitFor[i]))
+				{
+					await JavascriptUtil.resolveAfterXMilliseconds(100);
+				}
+			}
 		}
 	
 		callback();

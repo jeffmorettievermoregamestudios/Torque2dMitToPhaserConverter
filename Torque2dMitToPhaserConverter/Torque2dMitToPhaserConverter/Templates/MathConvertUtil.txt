@@ -8,36 +8,46 @@
 
 	convertToPhaserX : function (t2dX) {
 
-		return (t2dX + (this.torque2dCameraSizeWidth / 2)) * (this.phaserProjectWidth / this.torque2dCameraSizeWidth);
+		return (Number(t2dX) + (this.torque2dCameraSizeWidth * 1.0 / 2)) * (this.phaserProjectWidth * 1.0 / this.torque2dCameraSizeWidth);
 	},
 
 	convertToPhaserY : function (t2dY) {
 
-		return ((this.torque2dCameraSizeHeight / 2) - t2dY) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
+		return ((this.torque2dCameraSizeHeight * 1.0 / 2) - Number(t2dY)) * (this.phaserProjectHeight * 1.0 / this.torque2dCameraSizeHeight);
 	},
 
 	convertToPhaserWidth : function (t2dWidth) {
 		
-		return (t2dWidth) * (this.phaserProjectWidth / this.torque2dCameraSizeWidth);
+		return (Number(t2dWidth)) * (this.phaserProjectWidth * 1.0 / this.torque2dCameraSizeWidth);
 	},
 
 	convertToPhaserHeight : function (t2dHeight) {
 		
-		return (t2dHeight) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
+		return (Number(t2dHeight)) * (this.phaserProjectHeight * 1.0 / this.torque2dCameraSizeHeight);
 	},
 
 	convertToPhaserFontSize : function (t2dFontSize) {
 
-		return 	(t2dFontSize) * (this.phaserProjectHeight / this.torque2dCameraSizeHeight);
+		return 	(Number(t2dFontSize)) * (this.phaserProjectHeight * 1.0 / this.torque2dCameraSizeHeight);
 	},
 
 	convertToT2dX : function (phaserX) {
 
-		return (phaserX * (this.torque2dCameraSizeWidth / this.phaserProjectWidth)) - (this.torque2dCameraSizeWidth / 2);
+		return (Number(phaserX) * (this.torque2dCameraSizeWidth * 1.0 / this.phaserProjectWidth)) - (this.torque2dCameraSizeWidth * 1.0 / 2);
 	},
 
 	convertToT2dY : function (phaserY) {
 
-		return (this.torque2dCameraSizeHeight / 2) - (phaserY * (this.torque2dCameraSizeHeight / this.phaserProjectHeight));
-	}
+		return (this.torque2dCameraSizeHeight * 1.0 / 2) - (Number(phaserY) * (this.torque2dCameraSizeHeight * 1.0 / this.phaserProjectHeight));
+	},
+	
+	convertToT2dWidth : function (phaserWidth) {
+		
+		return (Number(phaserWidth)) * (this.torque2dCameraSizeWidth * 1.0 / this.phaserProjectWidth);
+	},
+
+	convertToT2dHeight : function (phaserHeight) {
+		
+		return (Number(phaserHeight)) * (this.torque2dCameraSizeHeight * 1.0 / this.phaserProjectHeight);
+	},
 }

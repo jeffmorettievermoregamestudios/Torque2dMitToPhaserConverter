@@ -53,5 +53,16 @@ namespace Torque2dMitToPhaserConverter.Torque2dScenes.Torque2dAssets
 
             GlobalVars.Torque2dModuleDatabase.Torque2dAssetList.Add(newAnimationAsset);
         }
+
+        public static void CreateTorque2dAudioAsset(string assetName, string audioFile, bool? isLooping, FileInfo assetFile)
+        {
+            var newAudioAsset = new Torque2dAudioAsset();
+            newAudioAsset.Name = assetName;
+            newAudioAsset.AssetFile = new FileInfo(assetFile.DirectoryName + "\\" + audioFile);
+
+            newAudioAsset.Looping = isLooping;
+
+            GlobalVars.Torque2dModuleDatabase.Torque2dAssetList.Add(newAudioAsset);
+        }
     }
 }

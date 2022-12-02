@@ -87,13 +87,16 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/SceneUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/GeneralUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserUtilFolder}/T2dFunctionsUtil.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserUtilFolder}/CookiesUtil.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserGlobalVarsFolder}/{GlobalVars.PhaserGlobalVarsFilename}'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SpriteBaseClass.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserClassesFolder}/CustomContainerClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/SceneBaseClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/PhaserTextBaseClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/PhaserSceneObjectClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/PhaserSimObjectClass.js'></script>\n";
             result += $"<script src='{GlobalVars.PhaserClassesFolder}/PhaserSimSetClass.js'></script>\n";
+            result += $"<script src='{GlobalVars.PhaserClassesFolder}/ParticleEmitterManagerBaseClass.js'></script>\n";
 
             foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
             {

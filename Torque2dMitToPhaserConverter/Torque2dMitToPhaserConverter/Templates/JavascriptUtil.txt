@@ -10,7 +10,33 @@
 
 	degToRad : function (deg) {
 		var pi = Math.PI;
-		return deg * (pi/180);
+		return deg * (pi / 180);
+	},
+
+	radToDeg : function (rad) {
+		var pi = Math.PI;
+		return rad * (180 / pi);
+	},
+
+	componentToHex : function (c) {
+		
+		var formattedC = Math.trunc(c);
+		
+		if (formattedC > 255) {
+			formattedC = 255;
+		}
+		
+		var hex = formattedC.toString(16);
+		return hex.length == 1 ? "0" + hex : hex;
+	},
+
+	// use with r g and b as integer values, ranging from 0 to 255
+	rgbToHex(r, g, b) {
+		return "#" + this.componentToHex(r) + this.componentToHex(g) + this.componentToHex(b);
+	},
+	
+	rgbToHexNumber(r, g, b) {
+		return Number("0x" + this.componentToHex(r) + this.componentToHex(g) + this.componentToHex(b));
 	}
 
 }

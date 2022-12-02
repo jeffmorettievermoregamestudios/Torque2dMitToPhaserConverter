@@ -38,12 +38,20 @@ remove(item)
 
 reorderChild(child1, child2)
 {
+	if (child1 == child2)
+	{
+		return;
+	}
+	
     var foundChild1 = false;
+	
+	var child1Temp = undefined;
 
     for (var i = 0; i < this.container.length; i++)
     {
         if (this.container[i] == child1)
         {
+			child1Temp = child1;
             foundChild1 = true;
             this.container.splice(i, 1);
             break;
@@ -59,10 +67,40 @@ reorderChild(child1, child2)
     {
         if (this.container[i] == child2)
         {
-            this.container.splice(i, 0, child1);
+            this.container.splice(i, 0, child1Temp);
             return;
         }
     }
+}
+
+clear()
+{
+	this.container = [];
+}
+
+contains(item)
+{
+	for (var i = 0; i < this.container.length; i++)
+    {
+        if (this.container[i] == item)
+        {
+            return true;
+        }
+    }
+	
+	return false;
+}
+
+toArray()
+{
+	var result = [];
+	
+	for (var i = 0; i < this.container.length; i++)
+    {
+		result.push(this.container[i]);
+    }
+	
+	return result;
 }
 
 }

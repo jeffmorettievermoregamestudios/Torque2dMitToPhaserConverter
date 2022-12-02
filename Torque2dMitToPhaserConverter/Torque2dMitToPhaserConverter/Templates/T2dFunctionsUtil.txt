@@ -1,10 +1,10 @@
 ﻿var T2dFunctionsUtil = {
 
 	getWord : function(inputString, index) {
-		return inputString.split(" ")[index];
+		return inputString.toString().split(" ")[index];
 	},
 
-	VectDist : function (vecA, vecB) {
+	VectorDist : function (vecA, vecB) {
 		
 		var xA = this.getWord(vecA, 0);
 		var xB = this.getWord(vecB, 0);
@@ -20,7 +20,7 @@
 
 	VectorNormalize : function (vec) {
 
-		var magnitude = this.VectDist(vec, "0 0");
+		var magnitude = this.VectorDist(vec, "0 0");
 		
 		var x = this.getWord(vec, 0);
 		var y = this.getWord(vec, 1);
@@ -57,5 +57,29 @@
 
 	mCos : function (deg) {
 		return Math.cos(JavascriptUtil.degToRad(deg));
+	},
+
+	mAbs : function (val) {
+		return Math.abs(val);
+	},
+
+	mAtan : function (yVal, xVal) {
+		return JavascriptUtil.radToDeg(Math.atan2(yVal, xVal));
+	},
+	
+	mFloor : function (val) {
+		return Math.floor(val);
+	},
+
+	mCeil : function (val) {
+		return Math.ceil(val);
+	},
+	
+	mSqrt : function (val) {
+		return Math.sqrt(val);
+	},
+	
+	mPow : function (val, exp) {
+		return Math.pow(val, exp);
 	}
 }

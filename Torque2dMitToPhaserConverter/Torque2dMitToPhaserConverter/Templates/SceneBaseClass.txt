@@ -6,24 +6,209 @@ constructor (config)
 	this.enabled = false;
 	this.timestampCreatedAt = new Date();
 	this.spriteList = new PhaserSimSetClass(); // note the PhaserSimSetClass was chosen just due to convenience :) This field is not 'directly' needed for the conversion
+	this.containerList = new PhaserSimSetClass(); // note the PhaserSimSetClass was chosen just due to convenience :) This field is not 'directly' needed for the conversion
+	this.phaserTextList = new PhaserSimSetClass(); // note the PhaserSimSetClass was chosen just due to convenience :) This field is not 'directly' needed for the conversion
+	this.particleEmitterManagerList = new PhaserSimSetClass(); // note the PhaserSimSetClass was chosen just due to convenience :) This field is not 'directly' needed for the conversion
+	
+	this.timestampStartedAt = undefined;
 }
 
 getSceneTime()
 {
-	return Math.abs((new Date().getTime() - this.timestampCreatedAt.getTime()) / 1000);
+	// OLD
+	//return Math.abs((new Date().getTime() - this.timestampCreatedAt.getTime()) / 1000);
+	
+	if (!this.timestampStartedAt)
+	{
+		return 0;
+	}
+	else
+	{
+		return Math.abs((new Date().getTime() - this.timestampStartedAt.getTime()) / 1000);
+	}
+}
+
+getObject (i)
+{
+	return this.spriteList.getObject(i);
+}
+
+getCount()
+{
+	return this.spriteList.getCount();
+}
+
+getContainerObject (i)
+{
+	return this.containerList.getObject(i);
+}
+
+getContainerCount()
+{
+	return this.containerList.getCount();
+}
+
+getTextObject (i)
+{
+	return this.phaserTextList.getObject(i);
+}
+
+getTextCount()
+{
+	return this.phaserTextList.getCount();
+}
+
+getParticleEmitterManagerObject (i)
+{
+	return this.particleEmitterManagerList.getObject(i);
+}
+
+getParticleEmitterManagerCount()
+{
+	return this.particleEmitterManagerList.getCount();
+}
+
+customDestroyScene()
+{
+	for (var i = 0; i < this.spriteList.getCount(); i++)
+	{
+		var sprite = this.spriteList.getObject(i);
+		sprite = undefined;	
+	}
+		
+	for (var i = 0; i < this.phaserTextList.getCount(); i++)
+	{
+		var phaserText = this.phaserTextList.getObject(i);
+		phaserText = undefined;		
+	}
+	
+	for (var i = 0; i < this.particleEmitterManagerList.getCount(); i++)
+	{
+		var particleEmitterManager = this.particleEmitterManagerList.getObject(i);
+		particleEmitterManager = undefined;		
+	}
+}
+
+customPauseAllAnimations()
+{
+	for (var i = 0; i < this.spriteList.getCount(); i++)
+	{
+		var sprite = this.spriteList.getObject(i);
+		
+		if (sprite)
+		{
+			if (sprite.anims)
+			{
+				sprite.anims.pause();
+			}
+		}
+	}
+}
+
+customResumeAllAnimations()
+{
+	for (var i = 0; i < this.spriteList.getCount(); i++)
+	{
+		var sprite = this.spriteList.getObject(i);
+		
+		if (sprite)
+		{
+			if (sprite.anims)
+			{
+				sprite.anims.resume();
+			}
+		}
+	}
+}
+
+setSceneToInvisible()
+{
+	for (var i = 0; i < this.spriteList.getCount(); i++)
+	{
+		var sprite = this.spriteList.getObject(i);
+		sprite.visible = false;	
+	}
+		
+	for (var i = 0; i < this.phaserTextList.getCount(); i++)
+	{
+		var phaserText = this.phaserTextList.getObject(i);
+		phaserText.visible = false;		
+	}
+	
+	for (var i = 0; i < this.particleEmitterManagerList.getCount(); i++)
+	{
+		var particleEmitterManager = this.particleEmitterManagerList.getObject(i);
+		particleEmitterManager.visible = false;		
+	}
+}
+
+extraRestartScene()
+{
+	this.enabled = false;
+	this.timestampCreatedAt = new Date();
+	this.spriteList = new PhaserSimSetClass(); // note the PhaserSimSetClass was chosen just due to convenience :) This field is not 'directly' needed for the conversion
+	this.containerList = new PhaserSimSetClass(); // note the PhaserSimSetClass was chosen just due to convenience :) This field is not 'directly' needed for the conversion
+	this.phaserTextList = new PhaserSimSetClass(); // note the PhaserSimSetClass was chosen just due to convenience :) This field is not 'directly' needed for the conversion
+	this.particleEmitterManagerList = new PhaserSimSetClass(); // note the PhaserSimSetClass was chosen just due to convenience :) This field is not 'directly' needed for the conversion
+	this.timestampStartedAt = undefined;
 }
 
 update (time, delta)
-{
+{	
 	if (this.enabled)
 	{
+		if (!this.timestampStartedAt)
+		{
+			this.timestampStartedAt = new Date();
+		}
+		
+		for (var i = 0; i < this.containerList.getCount(); i++)
+		{
+			var container = this.containerList.getObject(i);		
+			container.extraUpdate(time, delta);		
+		}
+		
 		for (var i = 0; i < this.spriteList.getCount(); i++)
 		{
 			var sprite = this.spriteList.getObject(i);
-			sprite.extraUpdate(time, delta);
+			sprite.extraUpdate(time, delta);		
+		}
+			
+		for (var i = 0; i < this.phaserTextList.getCount(); i++)
+		{
+			var phaserText = this.phaserTextList.getObject(i);
+			phaserText.extraUpdate(time, delta);		
+		}
+		
+		for (var i = 0; i < this.particleEmitterManagerList.getCount(); i++)
+		{
+			var particleEmitterManager = this.particleEmitterManagerList.getObject(i);
+			particleEmitterManager.extraUpdate(time, delta);		
 		}
 
 		super.update(time, delta);
+		
+		/*
+		
+		for (var i = 0; i < this.spriteList.getCount(); i++)
+		{
+			var sprite = this.spriteList.getObject(i);
+			
+			if (sprite.setVisibleAfterUpdate)
+			{
+				sprite.visible = true;
+			}
+		}
+		
+		for (var i = 0; i < this.phaserTextList.getCount(); i++)
+		{
+			var phaserText = this.phaserTextList.getObject(i);
+			
+			if (phaserText.setVisibleAfterUpdate)
+			{
+				phaserText.visible = true;
+			}			
+		}*/
 	}
 }
 

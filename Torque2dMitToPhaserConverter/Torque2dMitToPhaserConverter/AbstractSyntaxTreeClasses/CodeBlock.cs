@@ -31,6 +31,22 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
                 return new GlobalVariable { Name = thisAsGlobalVariable.Name, PhaserObjectType = thisAsGlobalVariable.PhaserObjectType };
             }
 
+            if (this.GetType() == typeof(BooleanFalseValue))
+            {
+                return new BooleanFalseValue();
+            }
+
+            if (this.GetType() == typeof(BooleanTrueValue))
+            {
+                return new BooleanTrueValue();
+            }
+
+            if (this.GetType() == typeof(NumericValue))
+            {
+                var thisAsNumericValue = (NumericValue)this;
+                return new NumericValue { NumberAsString = thisAsNumericValue.NumberAsString };
+            }
+
             return null;
         }
     }

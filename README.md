@@ -1,6 +1,16 @@
 # Torque2dMitToPhaserConverter
 
-Current Version:  v0.1.1
+Current Version:  v0.2.0 (final?)
+
+CHANGELOG:
+
+v0.2.0
+- lots of additions made, including primarily:
+- support for conversion of Audio is now available
+- lots of utility/helper classes added/functionality improved
+
+ALSO NOTE:  This is 'unofficially' the last update this project will ever have.  It is unlikely there
+will be any updates in the future.
 
 CHANGELOG:
 

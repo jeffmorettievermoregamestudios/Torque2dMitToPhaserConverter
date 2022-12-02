@@ -88,6 +88,12 @@ namespace Torque2dMitToPhaserConverter
             // Remove ModuleName prefix from assets
             RemoveModuleNamePrefixFromAssets();
 
+            // process audio play function calls (alxPlay)
+            ProcessAudioPlayFunctionCalls();
+
+            // process audio stop function calls (alxStop)
+            ProcessAudioStopFunctionCalls();
+
             // Populate Phaser GlobalVariables
             PopulatePhaserGlobalVar();
 
@@ -117,6 +123,12 @@ namespace Torque2dMitToPhaserConverter
             Process2ndPassForLocalVariablePhaserTexts();
             Process2ndPassForGlobalVariablePhaserTexts();
 
+            // convert 'FontSize = X' field property to a 'setFontSize(X)' method call (will convert the size of the text properly with this)
+            ProcessSetFontSizeMethodUsageForPhaserTexts();
+
+            // adds the T2dFunctionsUtil class library to common t2dFunctions (ie changes 'getWord(...)' to 'T2dFunctionsUtil.getWord(...)' etc)
+            PerformConversionForT2dFunctions();
+
             // Generates Code Files from templates (ie JavascriptUtil, SpriteBaseClass, etc)
             GenerateCodeFilesFromTemplates();
 
@@ -131,8 +143,8 @@ namespace Torque2dMitToPhaserConverter
             // performs a 2nd pass for converting all 'SceneLayer' values (flips them to negative values, ie similar to multiplying by -1)
             Process2ndPassForSceneLayerValues();
 
-            // process converting getRandom function calls
-            ProcessConvertingGetRandomFunctionCalls();
+            // process converting T2d (ie getRandom, strlen) function calls
+            ProcessConvertingT2dFunctionCalls();
 
             // 4) Process classes/methods in torquescript files.  Will also remove the class methods etc from the object 
             //    model (so they are not generated later when generating the converted torquescript files)
@@ -143,6 +155,10 @@ namespace Torque2dMitToPhaserConverter
 
             // generate 'var' token for local variables in code (for the scope they belong too) but this time for the PhaserClassList
             GenerateVarTokensForLocalVariablesInPhaserClasses();
+
+            // process schedule function calls (ie convert to setTimeout calls instead, which javascript can use)
+            ProcessScheduleCalls();
+            ProcessScheduleCallsInPhaserClasses();
 
             // generate the actual javascript files for the Phaser classes
             GeneratePhaserClassJavascriptFiles();
@@ -315,6 +331,15 @@ namespace Torque2dMitToPhaserConverter
 
                     Torque2dAssetLibrary.CreateTorque2dAnimationAsset(assetRootNode.Attribute("AssetName").Value, assetRootNode.Attribute("Image").Value, animationFrames, animationTime, animationCycle, assetFile);
                     break;
+
+                case "AudioAsset":
+
+                    var loopingAttr = assetRootNode.Attribute("Looping");
+                    var isLooping = loopingAttr == null ? (bool?)null : System.Convert.ToBoolean(loopingAttr.Value);
+
+                    Torque2dAssetLibrary.CreateTorque2dAudioAsset(assetRootNode.Attribute("AssetName").Value, assetRootNode.Attribute("AudioFile").Value, isLooping, assetFile);
+                    break;
+
             }
         }
 
@@ -1704,12 +1729,24 @@ namespace Torque2dMitToPhaserConverter
 
                     File.Copy(phaserAsset.Torque2dAssetFileReference.FullName, destinationFilePath, true);
                 }
+                else if (phaserAsset.GetType() == typeof(AudioAsset))
+                {
+                    var destinationFilePath = Path.Combine(GlobalVars.PhaserProjectOutputFolder, ((AudioAsset)phaserAsset).ResourceUrl.Replace('/', '\\'));
+
+                    var destinationFolderPath = Path.GetDirectoryName(destinationFilePath);
+                    if (!Directory.Exists(destinationFolderPath))
+                    {
+                        Directory.CreateDirectory(destinationFolderPath);
+                    }
+
+                    File.Copy(phaserAsset.Torque2dAssetFileReference.FullName, destinationFilePath, true);
+                }
             }
 
             // will also create a folder for any ttf font files as well, although we will not be populating the fonts into that folder (T2D projects don't have ttf files usually, will expect the user/developer to provide)
             if (GlobalVars.PhaserAssetRepo.PhaserCssFontFaceStyleList.Count > 0)
             {
-                var destinationFilePath = Path.Combine(GlobalVars.PhaserProjectOutputFolder, 
+                var destinationFilePath = Path.Combine(GlobalVars.PhaserProjectOutputFolder,
                     GlobalVars.PhaserAssetRepo.PhaserCssFontFaceStyleList.First().ResourceUrl.Replace('/', '\\'));
 
                 var destinationFolderPath = Path.GetDirectoryName(destinationFilePath);
@@ -1825,6 +1862,10 @@ namespace Torque2dMitToPhaserConverter
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserUtilFolder, "T2dFunctionsUtil.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\T2dFunctionsUtil.txt"));
 
+            // CookiesUtil.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserUtilFolder, "CookiesUtil.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\CookiesUtil.txt"));
+
             // SceneBaseClass.js
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "SceneBaseClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SceneBaseClass.txt"));
@@ -1832,6 +1873,10 @@ namespace Torque2dMitToPhaserConverter
             // SpriteBaseClass.js
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "SpriteBaseClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\SpriteBaseClass.txt"));
+
+            // CustomContainerClass.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "CustomContainerClass.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\CustomContainerClass.txt"));
 
             // PhaserTextBaseClass.js
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "PhaserTextBaseClass.js"),
@@ -1848,6 +1893,10 @@ namespace Torque2dMitToPhaserConverter
             // PhaserSimSetClass.js
             File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "PhaserSimSetClass.js"),
                 File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\PhaserSimSetClass.txt"));
+
+            // ParticleEmitterManagerBaseClass.js
+            File.WriteAllText(Path.Combine(GlobalVars.PhaserProjectOutputFolder, GlobalVars.PhaserClassesFolder, "ParticleEmitterManagerBaseClass.js"),
+                File.ReadAllText(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) + @"\Templates\ParticleEmitterManagerBaseClass.txt"));
         }
 
         private static void CompileListOfScenesCreatedInOurGameAndDoMoreSceneProcessing()
@@ -3263,7 +3312,7 @@ namespace Torque2dMitToPhaserConverter
             // return empty list if for some reason the animation asset cannot be found
             return new List<CodeBlock>();
         }
-        
+
         private static void Process2ndPassForLocalVariableScenes()
         {
             var newCodeFileList = new List<CodeFile>();
@@ -3471,7 +3520,7 @@ namespace Torque2dMitToPhaserConverter
                                         break;
                                     }
                                 }
-                            }                               
+                            }
 
                             if (!globalVariablesCollection.Exists(gv => ((GlobalVariable)codeBlock).Name.ToLower() == gv.Name.ToLower()))
                             {
@@ -4251,7 +4300,7 @@ namespace Torque2dMitToPhaserConverter
                             ((BasicCodeToken)codeBlock).Value = Torque2dConstants.SceneObjectClassName;
                         }
                     }
-                    
+
                     newCodeFile.Contents.Add(codeBlock);
                 }
 
@@ -4261,7 +4310,7 @@ namespace Torque2dMitToPhaserConverter
             GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
         }
 
-        public static void ProcessConvertingGetRandomFunctionCalls()
+        public static void ProcessConvertingT2dFunctionCalls()
         {
             var newCodeFileList = new List<CodeFile>();
 
@@ -4358,6 +4407,1545 @@ namespace Torque2dMitToPhaserConverter
                                     }
                                 }
                             }
+                        }
+                        else if (((BasicCodeToken)codeBlock).Value.ToLower() == "strlen")
+                        {
+                            var openRoundBracketCount = 0;
+
+                            for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                            {
+                                var codeBlock2 = codeFile.Contents[j];
+
+                                if (codeBlock2.GetType() == typeof(OpenRoundBracket))
+                                {
+                                    openRoundBracketCount++;
+                                }
+                                else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                                {
+                                    if (openRoundBracketCount > 1)
+                                    {
+                                        openRoundBracketCount--;
+                                        continue;
+                                    }
+
+                                    ((BasicCodeToken)codeBlock).Value = "GeneralUtil";
+
+                                    // conclude conversion
+                                    codeFile.Contents.InsertRange(i + 1, new List<CodeBlock>
+                                    {
+                                        new Dot(),
+                                        new BasicCodeToken { Value = "t2dStrLen" }
+                                    });
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    newCodeFile.Contents.Add(codeBlock);
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        public static void ProcessAudioPlayFunctionCalls()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(BasicCodeToken))
+                    {
+                        if (((BasicCodeToken)codeBlock).Value.ToLower() == "alxplay")
+                        {
+                            // first, backtrack and see if there's a handle/variable associated with the alxplay function call
+                            // keep a reference of the variable handy if there is
+                            Variable musicHandleVariable = null;
+
+                            bool foundWhiteSpaceOne = false;
+                            bool foundWhiteSpaceTwo = false;
+                            bool foundEqualsOp = false;
+
+                            for (var j = i - 1; j >= 0; j--)
+                            {
+                                if (!foundWhiteSpaceOne)
+                                {
+                                    if (codeFile.Contents[j].GetType() == typeof(WhitespaceCharacter) ||
+                                        codeFile.Contents[j].GetType() == typeof(NewLineCharacter))
+                                    {
+                                        foundWhiteSpaceOne = true;
+                                    }
+                                    continue;
+                                }
+                                else if (!foundEqualsOp)
+                                {
+                                    if (codeFile.Contents[j].GetType() == typeof(WhitespaceCharacter) ||
+                                        codeFile.Contents[j].GetType() == typeof(NewLineCharacter))
+                                    {
+                                        // keep continuing; might be more than one whitespace/newling char
+                                    }
+                                    else if (codeFile.Contents[j].GetType() == typeof(EqualsOperator))
+                                    {
+                                        foundEqualsOp = true;
+                                    }
+                                    continue;
+                                }
+                                else if (!foundWhiteSpaceTwo)
+                                {
+                                    if (codeFile.Contents[j].GetType() == typeof(WhitespaceCharacter) ||
+                                        codeFile.Contents[j].GetType() == typeof(NewLineCharacter))
+                                    {
+                                        foundWhiteSpaceTwo = true;
+                                    }
+                                    continue;
+                                }
+                                else
+                                {
+                                    if (codeFile.Contents[j].GetType() == typeof(WhitespaceCharacter) ||
+                                        codeFile.Contents[j].GetType() == typeof(NewLineCharacter))
+                                    {
+                                        // keep continuing; might be more than one whitespace/newline char
+                                        continue;
+                                    }
+                                    else if (codeFile.Contents[j].GetType() == typeof(GlobalVariable))
+                                    {
+                                        musicHandleVariable = (GlobalVariable)codeFile.Contents[j];
+                                        break;
+                                    }
+                                    else if (codeFile.Contents[j].GetType() == typeof(LocalVariable))
+                                    {
+                                        musicHandleVariable = (LocalVariable)codeFile.Contents[j];
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        // if we run into any other type of codeBlock, then abort
+
+                                        // TODO Handle when the musicHandle is assigned to something other than a Variable (ie like a BasicCodeToken)
+
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // will now proceed to adding CodeBlocks for the audio track being added/played
+                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                            {
+                                new BasicCodeToken { Value = "this" },
+                                new Dot(),
+                                new BasicCodeToken { Value = "sound" },
+                                new Dot(),
+                                new BasicCodeToken { Value = "add" }
+                            });
+
+                            bool foundClosingBracket = false;
+                            bool foundSemicolon = false;
+                            bool foundWhitespaceCharacter = false;
+
+                            bool isLooping = false;
+
+                            for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                            {
+                                var codeBlock2 = codeFile.Contents[j];
+
+                                if (!foundClosingBracket && (codeBlock2.GetType() == typeof(Variable) || codeBlock2.GetType() == typeof(StringValue)))
+                                {
+                                    // found the asset key for the audio sound.  Will want to check to see if this sound asset is a 'looping' sound
+                                    // if it is a looping sound, make note of it
+                                    string assetName = null;
+
+                                    if (codeBlock2.GetType() == typeof(Variable))
+                                    {
+                                        // TODO - broken; Need to actually get the 'value' assigned to the Variable.
+                                        // will have to manually edit output project (Phaser output) for these cases...
+
+                                        //assetName = ((Variable)codeBlock2).Name;
+                                    }
+                                    else if (codeBlock2.GetType() == typeof(StringValue))
+                                    {
+                                        assetName = ((StringValue)codeBlock2).Val.Substring(1, ((StringValue)codeBlock2).Val.Length - 2);
+                                    }
+
+                                    var audioAsset = (Torque2dAudioAsset)GlobalVars.Torque2dModuleDatabase.Torque2dAssetList.FirstOrDefault(asset => asset.Name == assetName);
+
+                                    if (audioAsset != null)
+                                    {
+                                        isLooping = audioAsset.Looping.HasValue ? audioAsset.Looping.Value : false;
+                                    }
+
+                                    newCodeFile.Contents.Add(codeBlock2);
+                                    continue;
+                                }
+                                else if (!foundClosingBracket)
+                                {
+                                    if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                                    {
+                                        foundClosingBracket = true;
+                                    }
+
+                                    newCodeFile.Contents.Add(codeBlock2);
+
+                                    if (foundClosingBracket)
+                                    {
+                                        if (musicHandleVariable == null)
+                                        {
+                                            // if 'musicHandleVariable' is null, then we don't need a reference to it.  In this case, we will call the 'setLoop' (if needed) and 'play' functions inline with the sound add function call
+
+                                            if (isLooping)
+                                            {
+                                                newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                {
+                                                    new Dot(),
+                                                    new BasicCodeToken { Value = "setLoop" },
+                                                    new OpenRoundBracket(),
+                                                    new BooleanTrueValue(),
+                                                    new ClosedRoundBracket()
+                                                });
+                                            }
+
+                                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                new Dot(),
+                                                new BasicCodeToken { Value = "play" },
+                                                new OpenRoundBracket(),
+                                                new ClosedRoundBracket()
+                                            });
+
+                                            i = j;
+                                            break;
+                                        }
+                                    }
+
+                                    continue;
+                                }
+                                else if (!foundSemicolon)
+                                {
+                                    if (codeBlock2.GetType() == typeof(Semicolon))
+                                    {
+                                        foundSemicolon = true;
+                                    }
+
+                                    newCodeFile.Contents.Add(codeBlock2);
+                                    continue;
+                                }
+                                else if (!foundWhitespaceCharacter)
+                                {
+                                    if (codeFile.Contents[j].GetType() == typeof(WhitespaceCharacter) ||
+                                        codeFile.Contents[j].GetType() == typeof(NewLineCharacter))
+                                    {
+                                        foundWhitespaceCharacter = true;
+                                    }
+
+                                    newCodeFile.Contents.Add(codeBlock2);
+                                    continue;
+                                }
+                                else
+                                {
+                                    // will now proceed to adding more code to now 'play' the audio track, and also apply setLoop(true) if needed
+
+                                    // will do setLoop first
+                                    if (isLooping)
+                                    {
+                                        if (musicHandleVariable.GetType() == typeof(GlobalVariable))
+                                        {
+                                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                new NewLineCharacter(),
+                                                (GlobalVariable)musicHandleVariable.DeepCopy(),
+                                                new Dot(),
+                                                new BasicCodeToken { Value = "setLoop" },
+                                                new OpenRoundBracket(),
+                                                new BooleanTrueValue(),
+                                                new ClosedRoundBracket(),
+                                                new Semicolon()
+                                            });
+                                        }
+                                        else // musicHandleVariable.GetType() == typeof(LocalVariable)
+                                        {
+                                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                new NewLineCharacter(),
+                                                (LocalVariable)musicHandleVariable.DeepCopy(),
+                                                new Dot(),
+                                                new BasicCodeToken { Value = "setLoop" },
+                                                new OpenRoundBracket(),
+                                                new BooleanTrueValue(),
+                                                new ClosedRoundBracket(),
+                                                new Semicolon()
+                                            });
+                                        }
+                                    }
+
+
+                                    // and now 'play' the audio track
+                                    if (musicHandleVariable.GetType() == typeof(GlobalVariable))
+                                    {
+                                        newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                        {
+                                            new NewLineCharacter(),
+                                            (GlobalVariable)musicHandleVariable.DeepCopy(),
+                                            new Dot(),
+                                            new BasicCodeToken { Value = "play" },
+                                            new OpenRoundBracket(),
+                                            new ClosedRoundBracket(),
+                                            new Semicolon()
+                                        });
+                                    }
+                                    else // musicHandleVariable.GetType() == typeof(LocalVariable)
+                                    {
+                                        newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                        {
+                                            new NewLineCharacter(),
+                                            (LocalVariable)musicHandleVariable.DeepCopy(),
+                                            new Dot(),
+                                            new BasicCodeToken { Value = "play" },
+                                            new OpenRoundBracket(),
+                                            new ClosedRoundBracket(),
+                                            new Semicolon()
+                                        });
+                                    }
+
+                                    i = j - 1;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            newCodeFile.Contents.Add(codeBlock);
+                        }
+                    }
+                    //
+                    // 2021-09-09 > TODO other sound functions ie alxStop
+                    //var introTrack = this.sound.add(); DONE
+                    // introTrack.setLoop(true);   (? should work) DONE
+                    // introTrack.stop();   (? should work)
+                    //
+                    else
+                    {
+                        newCodeFile.Contents.Add(codeBlock);
+                    }
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        public static void ProcessAudioStopFunctionCalls()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(BasicCodeToken))
+                    {
+                        if (((BasicCodeToken)codeBlock).Value.ToLower() == "alxstop")
+                        {
+                            Variable musicHandleVariable = null;
+
+                            for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                            {
+                                var codeBlock2 = codeFile.Contents[j];
+
+                                if (codeBlock2.GetType() == typeof(GlobalVariable))
+                                {
+                                    musicHandleVariable = (GlobalVariable)codeFile.Contents[j];
+                                    continue;
+                                }
+                                else if (codeBlock2.GetType() == typeof(LocalVariable))
+                                {
+                                    musicHandleVariable = (LocalVariable)codeFile.Contents[j];
+                                    continue;
+                                }
+                                else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                                {
+                                    if (musicHandleVariable.GetType() == typeof(GlobalVariable))
+                                    {
+                                        newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                (GlobalVariable)musicHandleVariable.DeepCopy(),
+                                                new Dot(),
+                                                new BasicCodeToken { Value = "stop" },
+                                                new OpenRoundBracket(),
+                                                new ClosedRoundBracket(),
+                                            });
+                                    }
+                                    else // musicHandleVariable.GetType() == typeof(LocalVariable)
+                                    {
+                                        newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                (LocalVariable)musicHandleVariable.DeepCopy(),
+                                                new Dot(),
+                                                new BasicCodeToken { Value = "stop" },
+                                                new OpenRoundBracket(),
+                                                new ClosedRoundBracket(),
+                                            });
+                                    }
+
+                                    i = j;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            newCodeFile.Contents.Add(codeBlock);
+                        }
+                    }
+                    else
+                    {
+                        newCodeFile.Contents.Add(codeBlock);
+                    }
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        public static void ProcessScheduleCalls()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(BasicCodeToken))
+                    {
+                        if (((BasicCodeToken)codeBlock).Value.ToLower() == "schedule")
+                        {
+                            List<CodeBlock> identifierBlob = new List<CodeBlock>();
+
+                            // will first collect any preceding codeBlocks (ie form the 'identifier blob') if there is one
+                            for (var j = i - 1; j >= 0; j--)
+                            {
+                                var codeBlock2 = codeFile.Contents[j];
+
+                                if (codeBlock2.GetType() == typeof(WhitespaceCharacter) || codeBlock2.GetType() == typeof(NewLineCharacter) || codeBlock2.GetType() == typeof(OpenCurlyBracket))
+                                {
+                                    break;
+                                }
+
+                                identifierBlob.Add(codeBlock2);
+                                newCodeFile.Contents.RemoveAt(newCodeFile.Contents.Count - 1);
+                            }
+
+                            if (identifierBlob.Count < 1)
+                            {
+                                int timeDelay = 0;
+                                string functionName = null;
+                                var parameterList = new List<CodeBlock>();
+
+                                bool foundOpenRoundBacket = false;
+                                bool foundTimeDelay = false;
+                                bool foundFirstComma = false;
+                                // note - will be ignoring the 2nd parameter to the schedule function
+                                bool foundSecondComma = false;
+                                bool foundFunctionNameAsString = false;
+                                bool foundParametersComma = false;
+                                bool foundClosedRoundBracket = false;
+                                bool foundSemicolon = false;
+
+                                for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                                {
+                                    var codeBlock2 = codeFile.Contents[j];
+
+                                    if (!foundOpenRoundBacket)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(OpenRoundBracket))
+                                        {
+                                            foundOpenRoundBacket = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundTimeDelay)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(NumericValue))
+                                        {
+                                            timeDelay = System.Convert.ToInt32(((NumericValue)codeBlock2).NumberAsString);
+                                            foundTimeDelay = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundFirstComma)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(Comma))
+                                        {
+                                            foundFirstComma = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundSecondComma)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(Comma))
+                                        {
+                                            foundSecondComma = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundFunctionNameAsString)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(StringValue))
+                                        {
+                                            functionName = ((StringValue)codeBlock2).Val.Substring(1, ((StringValue)codeBlock2).Val.Length - 2);
+                                            foundFunctionNameAsString = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundParametersComma && !foundClosedRoundBracket)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(Comma))
+                                        {
+                                            foundParametersComma = true;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                                        {
+                                            foundClosedRoundBracket = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundClosedRoundBracket)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(BooleanFalseValue))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((BooleanFalseValue)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(BooleanTrueValue))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((BooleanTrueValue)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(GlobalVariable))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((GlobalVariable)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(LocalVariable))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((LocalVariable)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(NumericValue))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((NumericValue)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(StringValue))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((StringValue)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundSemicolon)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(Semicolon))
+                                        {
+                                            // will now add the 'setTimeout' function call to our newCodeFile
+                                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                new BasicCodeToken { Value = "setTimeout" },
+                                                new OpenRoundBracket(),
+                                                new BasicCodeToken { Value = "function" },
+                                                new OpenRoundBracket(),
+                                                new ClosedRoundBracket(),
+                                                new OpenCurlyBracket(),
+                                                new WhitespaceCharacter { WhitespaceChar = ' ' },
+                                                new BasicCodeToken { Value = functionName },
+                                                new OpenRoundBracket()
+                                            });
+
+                                            bool atLeastOneParameter = false;
+
+                                            foreach (var parameter in parameterList)
+                                            {
+                                                atLeastOneParameter = true;
+
+                                                if (parameter.GetType() == typeof(BooleanFalseValue))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (BooleanFalseValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(BooleanTrueValue))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (BooleanTrueValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(GlobalVariable))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (GlobalVariable)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(LocalVariable))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (LocalVariable)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(NumericValue))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (NumericValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(StringValue))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (StringValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                            }
+
+                                            if (atLeastOneParameter)
+                                            {
+                                                newCodeFile.Contents.RemoveAt(newCodeFile.Contents.Count - 1);
+                                            }
+
+                                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                new ClosedRoundBracket(),
+                                                new Semicolon(),
+                                                new WhitespaceCharacter { WhitespaceChar = ' ' },
+                                                new ClosedCurlyBracket(),
+                                                new Comma(),
+                                                new NumericValue { NumberAsString = timeDelay.ToString() },
+                                                new ClosedRoundBracket(),
+                                                new Semicolon()
+                                            });
+
+                                            i = j;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                // in this block if 'identifierBlob.Count > 0'
+
+                                int timeDelay = 0;
+                                string methodName = null;
+                                var parameterList = new List<CodeBlock>();
+
+                                bool foundOpenRoundBacket = false;
+                                bool foundTimeDelay = false;
+                                bool foundFirstComma = false;
+                                bool foundMethodNameAsString = false;
+                                bool foundParametersComma = false;
+                                bool foundClosedRoundBracket = false;
+                                bool foundSemicolon = false;
+
+                                for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                                {
+                                    var codeBlock2 = codeFile.Contents[j];
+
+                                    if (!foundOpenRoundBacket)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(OpenRoundBracket))
+                                        {
+                                            foundOpenRoundBacket = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundTimeDelay)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(NumericValue))
+                                        {
+                                            timeDelay = System.Convert.ToInt32(((NumericValue)codeBlock2).NumberAsString);
+                                            foundTimeDelay = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundFirstComma)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(Comma))
+                                        {
+                                            foundFirstComma = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundMethodNameAsString)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(StringValue))
+                                        {
+                                            methodName = ((StringValue)codeBlock2).Val.Substring(1, ((StringValue)codeBlock2).Val.Length - 2);
+                                            foundMethodNameAsString = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundParametersComma && !foundClosedRoundBracket)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(Comma))
+                                        {
+                                            foundParametersComma = true;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                                        {
+                                            foundClosedRoundBracket = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundClosedRoundBracket)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(BooleanFalseValue))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((BooleanFalseValue)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(BooleanTrueValue))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((BooleanTrueValue)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(GlobalVariable))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((GlobalVariable)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(LocalVariable))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((LocalVariable)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(NumericValue))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((NumericValue)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+                                        else if (codeBlock2.GetType() == typeof(StringValue))
+                                        {
+                                            // found a parameter; store in the parameterList
+                                            parameterList.Add((StringValue)codeBlock2);
+                                            foundParametersComma = false;
+                                        }
+
+                                        continue;
+                                    }
+                                    else if (!foundSemicolon)
+                                    {
+                                        if (codeBlock2.GetType() == typeof(Semicolon))
+                                        {
+                                            // will now add the 'setTimeout' method call to our newCodeFile
+                                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                new BasicCodeToken { Value = "setTimeout" },
+                                                new OpenRoundBracket(),
+                                                new BasicCodeToken { Value = "function" },
+                                                new OpenRoundBracket(),
+                                                new ClosedRoundBracket(),
+                                                new OpenCurlyBracket(),
+                                                new WhitespaceCharacter { WhitespaceChar = ' ' }
+                                            });
+
+                                            identifierBlob.Reverse();
+                                            newCodeFile.Contents.AddRange(identifierBlob);
+
+                                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                new BasicCodeToken { Value = methodName },
+                                                new OpenRoundBracket()
+                                            });
+
+                                            bool atLeastOneParameter = false;
+
+                                            foreach (var parameter in parameterList)
+                                            {
+                                                atLeastOneParameter = true;
+
+                                                if (parameter.GetType() == typeof(BooleanFalseValue))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (BooleanFalseValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(BooleanTrueValue))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (BooleanTrueValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(GlobalVariable))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (GlobalVariable)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(LocalVariable))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (LocalVariable)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(NumericValue))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (NumericValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                                else if (parameter.GetType() == typeof(StringValue))
+                                                {
+                                                    newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (StringValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                }
+                                            }
+
+                                            if (atLeastOneParameter)
+                                            {
+                                                newCodeFile.Contents.RemoveAt(newCodeFile.Contents.Count - 1);
+                                            }
+
+                                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                new ClosedRoundBracket(),
+                                                new Semicolon(),
+                                                new WhitespaceCharacter { WhitespaceChar = ' ' },
+                                                new ClosedCurlyBracket(),
+                                                new Comma(),
+                                                new NumericValue { NumberAsString = timeDelay.ToString() },
+                                                new ClosedRoundBracket(),
+                                                new Semicolon()
+                                            });
+
+                                            i = j;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            newCodeFile.Contents.Add(codeBlock);
+                        }
+                    }
+                    else
+                    {
+                        newCodeFile.Contents.Add(codeBlock);
+                    }
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        public static void ProcessScheduleCallsInPhaserClasses()
+        {
+            var newPhaserClassList = new List<PhaserClass>();
+
+            foreach (var phaserClass in GlobalVars.PhaserCodeRepo.PhaserClassList)
+            {
+                var newPhaserClass = new PhaserClass
+                {
+                    ClassName = phaserClass.ClassName,
+                    ClassMethods = new List<Tuple<string, List<string>, List<CodeBlock>>>()
+                };
+
+                foreach (var classMethod in phaserClass.ClassMethods)
+                {
+                    var newClassMethodContents = new List<CodeBlock>();
+
+                    for (var i = 0; i < classMethod.Item3.Count; i++)
+                    {
+                        var codeBlock = classMethod.Item3[i];
+
+                        if (codeBlock.GetType() == typeof(BasicCodeToken))
+                        {
+                            if (((BasicCodeToken)codeBlock).Value.ToLower() == "schedule")
+                            {
+                                List<CodeBlock> identifierBlob = new List<CodeBlock>();
+
+                                // will first collect any preceding codeBlocks (ie form the 'identifier blob') if there is one
+                                for (var j = i - 1; j >= 0; j--)
+                                {
+                                    var codeBlock2 = classMethod.Item3[j];
+
+                                    if (codeBlock2.GetType() == typeof(WhitespaceCharacter) || codeBlock2.GetType() == typeof(NewLineCharacter) || codeBlock2.GetType() == typeof(OpenCurlyBracket))
+                                    {
+                                        break;
+                                    }
+
+                                    identifierBlob.Add(codeBlock2);
+                                    newClassMethodContents.RemoveAt(newClassMethodContents.Count - 1);
+                                }
+
+                                if (identifierBlob.Count < 1)
+                                {
+                                    int timeDelay = 0;
+                                    string functionName = null;
+                                    var parameterList = new List<CodeBlock>();
+
+                                    bool foundOpenRoundBacket = false;
+                                    bool foundTimeDelay = false;
+                                    bool foundFirstComma = false;
+                                    // note - will be ignoring the 2nd parameter to the schedule function
+                                    bool foundSecondComma = false;
+                                    bool foundFunctionNameAsString = false;
+                                    bool foundParametersComma = false;
+                                    bool foundClosedRoundBracket = false;
+                                    bool foundSemicolon = false;
+
+                                    for (var j = i + 1; j < classMethod.Item3.Count; j++)
+                                    {
+                                        var codeBlock2 = classMethod.Item3[j];
+
+                                        if (!foundOpenRoundBacket)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(OpenRoundBracket))
+                                            {
+                                                foundOpenRoundBacket = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundTimeDelay)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(NumericValue))
+                                            {
+                                                timeDelay = System.Convert.ToInt32(((NumericValue)codeBlock2).NumberAsString);
+                                                foundTimeDelay = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundFirstComma)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(Comma))
+                                            {
+                                                foundFirstComma = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundSecondComma)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(Comma))
+                                            {
+                                                foundSecondComma = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundFunctionNameAsString)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(StringValue))
+                                            {
+                                                functionName = ((StringValue)codeBlock2).Val.Substring(1, ((StringValue)codeBlock2).Val.Length - 2);
+                                                foundFunctionNameAsString = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundParametersComma && !foundClosedRoundBracket)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(Comma))
+                                            {
+                                                foundParametersComma = true;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                                            {
+                                                foundClosedRoundBracket = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundClosedRoundBracket)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(BooleanFalseValue))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((BooleanFalseValue)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(BooleanTrueValue))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((BooleanTrueValue)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(GlobalVariable))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((GlobalVariable)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(LocalVariable))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((LocalVariable)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(NumericValue))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((NumericValue)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(StringValue))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((StringValue)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundSemicolon)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(Semicolon))
+                                            {
+                                                // will now add the 'setTimeout' function call to our newCodeFile
+                                                newClassMethodContents.AddRange(new List<CodeBlock>
+                                                {
+                                                    new BasicCodeToken { Value = "setTimeout" },
+                                                    new OpenRoundBracket(),
+                                                    new BasicCodeToken { Value = "function" },
+                                                    new OpenRoundBracket(),
+                                                    new ClosedRoundBracket(),
+                                                    new OpenCurlyBracket(),
+                                                    new WhitespaceCharacter { WhitespaceChar = ' ' },
+                                                    new BasicCodeToken { Value = functionName },
+                                                    new OpenRoundBracket()
+                                                });
+
+                                                bool atLeastOneParameter = false;
+
+                                                foreach (var parameter in parameterList)
+                                                {
+                                                    atLeastOneParameter = true;
+
+                                                    if (parameter.GetType() == typeof(BooleanFalseValue))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (BooleanFalseValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(BooleanTrueValue))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (BooleanTrueValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(GlobalVariable))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (GlobalVariable)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(LocalVariable))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (LocalVariable)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(NumericValue))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (NumericValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(StringValue))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (StringValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                }
+
+                                                if (atLeastOneParameter)
+                                                {
+                                                    newClassMethodContents.RemoveAt(newClassMethodContents.Count - 1);
+                                                }
+
+                                                newClassMethodContents.AddRange(new List<CodeBlock>
+                                                {
+                                                    new ClosedRoundBracket(),
+                                                    new Semicolon(),
+                                                    new WhitespaceCharacter { WhitespaceChar = ' ' },
+                                                    new ClosedCurlyBracket(),
+                                                    new Comma(),
+                                                    new NumericValue { NumberAsString = timeDelay.ToString() },
+                                                    new ClosedRoundBracket(),
+                                                    new Semicolon()
+                                                });
+
+                                                i = j;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // in this block if 'identifierBlob.Count > 0'
+
+                                    int timeDelay = 0;
+                                    string methodName = null;
+                                    var parameterList = new List<CodeBlock>();
+
+                                    bool foundOpenRoundBacket = false;
+                                    bool foundTimeDelay = false;
+                                    bool foundFirstComma = false;
+                                    bool foundMethodNameAsString = false;
+                                    bool foundParametersComma = false;
+                                    bool foundClosedRoundBracket = false;
+                                    bool foundSemicolon = false;
+
+                                    for (var j = i + 1; j < classMethod.Item3.Count; j++)
+                                    {
+                                        var codeBlock2 = classMethod.Item3[j];
+
+                                        if (!foundOpenRoundBacket)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(OpenRoundBracket))
+                                            {
+                                                foundOpenRoundBacket = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundTimeDelay)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(NumericValue))
+                                            {
+                                                timeDelay = System.Convert.ToInt32(((NumericValue)codeBlock2).NumberAsString);
+                                                foundTimeDelay = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundFirstComma)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(Comma))
+                                            {
+                                                foundFirstComma = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundMethodNameAsString)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(StringValue))
+                                            {
+                                                methodName = ((StringValue)codeBlock2).Val.Substring(1, ((StringValue)codeBlock2).Val.Length - 2);
+                                                foundMethodNameAsString = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundParametersComma && !foundClosedRoundBracket)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(Comma))
+                                            {
+                                                foundParametersComma = true;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(ClosedRoundBracket))
+                                            {
+                                                foundClosedRoundBracket = true;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundClosedRoundBracket)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(BooleanFalseValue))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((BooleanFalseValue)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(BooleanTrueValue))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((BooleanTrueValue)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(GlobalVariable))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((GlobalVariable)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(LocalVariable))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((LocalVariable)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(NumericValue))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((NumericValue)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+                                            else if (codeBlock2.GetType() == typeof(StringValue))
+                                            {
+                                                // found a parameter; store in the parameterList
+                                                parameterList.Add((StringValue)codeBlock2);
+                                                foundParametersComma = false;
+                                            }
+
+                                            continue;
+                                        }
+                                        else if (!foundSemicolon)
+                                        {
+                                            if (codeBlock2.GetType() == typeof(Semicolon))
+                                            {
+                                                // will now add the 'setTimeout' method call to our newCodeFile
+                                                newClassMethodContents.AddRange(new List<CodeBlock>
+                                                {
+                                                    new BasicCodeToken { Value = "setTimeout" },
+                                                    new OpenRoundBracket(),
+                                                    new BasicCodeToken { Value = "function" },
+                                                    new OpenRoundBracket(),
+                                                    new ClosedRoundBracket(),
+                                                    new OpenCurlyBracket(),
+                                                    new WhitespaceCharacter { WhitespaceChar = ' ' }
+                                                });
+
+                                                identifierBlob.Reverse();
+                                                newClassMethodContents.AddRange(identifierBlob);
+
+                                                newClassMethodContents.AddRange(new List<CodeBlock>
+                                                {
+                                                    new BasicCodeToken { Value = methodName },
+                                                    new OpenRoundBracket()
+                                                });
+
+                                                bool atLeastOneParameter = false;
+
+                                                foreach (var parameter in parameterList)
+                                                {
+                                                    atLeastOneParameter = true;
+
+                                                    if (parameter.GetType() == typeof(BooleanFalseValue))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (BooleanFalseValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(BooleanTrueValue))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (BooleanTrueValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(GlobalVariable))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (GlobalVariable)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(LocalVariable))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (LocalVariable)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(NumericValue))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (NumericValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                    else if (parameter.GetType() == typeof(StringValue))
+                                                    {
+                                                        newClassMethodContents.AddRange(new List<CodeBlock>
+                                                        {
+                                                            (StringValue)parameter.DeepCopy(),
+                                                            new Comma()
+                                                        });
+                                                    }
+                                                }
+
+                                                if (atLeastOneParameter)
+                                                {
+                                                    newClassMethodContents.RemoveAt(newClassMethodContents.Count - 1);
+                                                }
+
+                                                newClassMethodContents.AddRange(new List<CodeBlock>
+                                                {
+                                                    new ClosedRoundBracket(),
+                                                    new Semicolon(),
+                                                    new WhitespaceCharacter { WhitespaceChar = ' ' },
+                                                    new ClosedCurlyBracket(),
+                                                    new Comma(),
+                                                    new NumericValue { NumberAsString = timeDelay.ToString() },
+                                                    new ClosedRoundBracket(),
+                                                    new Semicolon()
+                                                });
+
+                                                i = j;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                newClassMethodContents.Add(codeBlock);
+                            }
+                        }
+                        else
+                        {
+                            newClassMethodContents.Add(codeBlock);
+                        }
+                    }
+
+                    newPhaserClass.ClassMethods.Add(
+                        Tuple.Create(classMethod.Item1,
+                            classMethod.Item2,
+                            newClassMethodContents
+                        )
+                    );
+                }
+
+                newPhaserClassList.Add(newPhaserClass);
+            }
+
+            GlobalVars.PhaserCodeRepo.PhaserClassList = newPhaserClassList;
+        }
+        
+        public static void ProcessSetFontSizeMethodUsageForPhaserTexts()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(Dot))
+                    {
+                        newCodeFile.Contents.Add(codeBlock);
+
+                        i++;
+
+                        var codeBlock2 = codeFile.Contents[i];
+
+                        if (codeBlock2.GetType() == typeof(BasicCodeToken))
+                        {
+                            if (((BasicCodeToken)codeBlock2).Value.ToLower() == "fontsize")
+                            {
+                                bool foundEqualsSign = false;
+
+                                for (var j = i + 1; j < codeFile.Contents.Count; j++)
+                                {
+                                    var codeBlock3 = codeFile.Contents[j];
+
+                                    if (!foundEqualsSign)
+                                    {
+                                        if (codeBlock3.GetType() == typeof(EqualsOperator))
+                                        {
+                                            foundEqualsSign = true;
+                                        }
+
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        if (codeBlock3.GetType() == typeof(NumericValue))
+                                        {
+                                            newCodeFile.Contents.AddRange(new List<CodeBlock>
+                                            {
+                                                new BasicCodeToken { Value = "setFontSize" },
+                                                new OpenRoundBracket(),
+                                                new NumericValue { NumberAsString = ((NumericValue)codeBlock3).NumberAsString },
+                                                new ClosedRoundBracket()
+                                            });
+
+                                            i = j;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                newCodeFile.Contents.Add(codeBlock2);
+                            }
+                        }
+                        else
+                        {
+                            newCodeFile.Contents.Add(codeBlock2);
+                        }
+                    }
+                    else
+                    {
+                        newCodeFile.Contents.Add(codeBlock);
+                    }
+                }
+
+                newCodeFileList.Add(newCodeFile);
+            }
+
+            GlobalVars.Torque2dModuleDatabase.CodeFileList = newCodeFileList;
+        }
+
+        public static void PerformConversionForT2dFunctions()
+        {
+            var newCodeFileList = new List<CodeFile>();
+
+            foreach (var codeFile in GlobalVars.Torque2dModuleDatabase.CodeFileList)
+            {
+                var newCodeFile = new CodeFile
+                {
+                    Filename = codeFile.Filename,
+                    Contents = new List<CodeBlock>()
+                };
+
+                for (var i = 0; i < codeFile.Contents.Count; i++)
+                {
+                    var codeBlock = codeFile.Contents[i];
+
+                    if (codeBlock.GetType() == typeof(BasicCodeToken))
+                    {
+                        if (((BasicCodeToken)codeBlock).Value.ToLower() == "getword" ||
+                            ((BasicCodeToken)codeBlock).Value.ToLower() == "vectdist" ||
+                            ((BasicCodeToken)codeBlock).Value.ToLower() == "vectornormalize" ||
+                            ((BasicCodeToken)codeBlock).Value.ToLower() == "vectorscale" ||
+                            ((BasicCodeToken)codeBlock).Value.ToLower() == "vectorsub" ||
+                            ((BasicCodeToken)codeBlock).Value.ToLower() == "msin" ||
+                            ((BasicCodeToken)codeBlock).Value.ToLower() == "mabs" ||
+                            ((BasicCodeToken)codeBlock).Value.ToLower() == "matan" ||
+                            ((BasicCodeToken)codeBlock).Value.ToLower() == "mfloor" ||
+                            ((BasicCodeToken)codeBlock).Value.ToLower() == "mceil")
+                        {
+                            newCodeFile.Contents.Add(new BasicCodeToken { Value = "T2dFunctionsUtil" });
+                            newCodeFile.Contents.Add(new Dot());
+                        }
+                        else if (((BasicCodeToken)codeBlock).Value.ToLower() == "mRadToDeg")
+                        {
+                            newCodeFile.Contents.Add(new BasicCodeToken { Value = "JavascriptUtil" });
+                            newCodeFile.Contents.Add(new Dot());
+
+                            ((BasicCodeToken)codeBlock).Value = "radToDeg";
+                        }
+                        else if (((BasicCodeToken)codeBlock).Value.ToLower() == "mDegToRad")
+                        {
+                            newCodeFile.Contents.Add(new BasicCodeToken { Value = "JavascriptUtil" });
+                            newCodeFile.Contents.Add(new Dot());
+
+                            ((BasicCodeToken)codeBlock).Value = "degToRad";
                         }
                     }
 

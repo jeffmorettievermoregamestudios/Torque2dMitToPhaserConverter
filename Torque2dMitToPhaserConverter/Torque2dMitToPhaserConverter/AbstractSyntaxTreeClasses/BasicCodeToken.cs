@@ -105,6 +105,11 @@ namespace Torque2dMitToPhaserConverter.AbstractSyntaxTreeClasses
                 {
                     return "T2dFunctionsUtil.mCos";
                 }
+
+                if (Value.ToLower() == "cancel")
+                {
+                    return "clearTimeout";
+                }
             }
 
             return Value;

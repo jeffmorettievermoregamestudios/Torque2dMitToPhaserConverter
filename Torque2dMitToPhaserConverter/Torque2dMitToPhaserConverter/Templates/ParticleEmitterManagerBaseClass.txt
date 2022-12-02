@@ -1,8 +1,8 @@
-﻿class PhaserTextBaseClass extends Phaser.GameObjects.Text {
+﻿class ParticleEmitterManagerBaseClass extends Phaser.GameObjects.Particles.ParticleEmitterManager {
 
-constructor (scene, x, y, text, style)
+constructor (scene, texture)
 {
-    super(scene, x, y, text, style);
+    super(scene, texture);
 	this.angularVelocity = 0;
 	this.linearVelocityX = 0;
 	this.linearVelocityY = 0;
@@ -13,7 +13,7 @@ constructor (scene, x, y, text, style)
 	this.baseReferenceY = 0;
 	this.baseReferenceAngle = 0;
 	scene.add.existing(this);
-	scene.phaserTextList.add(this);
+	scene.particleEmitterManagerList.add(this);
 }
 
 getPosition() {
@@ -29,6 +29,27 @@ getPositionY() {
 	return MathConvertUtil.convertToT2dY(this.baseReferenceY);
 }
 
+getLinearVelocity() {
+	// return a vector with this objects X and Y velocities
+	return this.getLinearVelocityX() + " " + this.getLinearVelocityY();
+}
+
+getLinearVelocityX() {
+	return MathConvertUtil.convertToT2dWidth(this.linearVelocityX);
+}
+
+getLinearVelocityY() {
+	return MathConvertUtil.convertToT2dHeight(this.linearVelocityY) * -1;
+}
+
+getSizeX() {
+	return MathConvertUtil.convertToT2dWidth(this.displayWidth);
+}
+
+getSizeY() {
+	return MathConvertUtil.convertToT2dHeight(this.displayHeight);
+}
+
 getAngle() {
 	return this.baseReferenceAngle - 90;
 }
@@ -37,21 +58,24 @@ setSize(width, height) {
 	
 	if (height || height === 0)
 	{
-		super.setSize(MathConvertUtil.convertToPhaserWidth(width), MathConvertUtil.convertToPhaserHeight(height));
+		this.scaleX = MathConvertUtil.convertToPhaserWidth(width);
+		this.scaleY = MathConvertUtil.convertToPhaserHeight(height);
 	}
 	else
 	{
-		super.setSize(MathConvertUtil.convertToPhaserWidth(width), MathConvertUtil.convertToPhaserHeight(width));
+		this.scaleX = MathConvertUtil.convertToPhaserWidth(width);
+		this.scaleY = MathConvertUtil.convertToPhaserHeight(width);
 	}
 }
 
-setFontSize(size) {
-	super.setFontSize(MathConvertUtil.convertToPhaserFontSize(size));
+setSizeX(width) {
+	this.scaleX = MathConvertUtil.convertToPhaserWidth(width);
 }
 
-// NOTE: Besides setting position, you can use the Phaser method setAlign([align]) to align your text
-// as either 'left', 'right', 'center', or 'justify'.  Note that this needs to be implemented manually in 
-// your output code
+setSizeY(height) {
+	this.scaleY = MathConvertUtil.convertToPhaserHeight(height);
+}
+
 setPosition(paramA, paramB) {
 	
 	// NOTE:  Sometimes this function will be called with one parameter, and this parameter will be a vector that we will
@@ -98,7 +122,11 @@ setPositionY(y) {
 }
 
 setAngle(angleInDegrees) {
-	this.baseReferenceAngle = this.angle + 90;
+	this.baseReferenceAngle = angleInDegrees + 90;
+	
+	if (this.baseReferenceAngle > 360) {
+		this.baseReferenceAngle = 360 - this.baseReferenceAngle;
+	}
 }
 
 setAngularVelocity(angVelo) {
@@ -144,7 +172,7 @@ setLinearVelocity(paramA, paramB) {
 	// thus being an input with an X component and a Y component.  Will check to see if second param is 'defined', and
 	// if it is, assume two params.  Otherwise, its one param (as a vector).
 	
-	if (paramB)
+	if (paramB || paramB === 0)
 	{
 		var veloX = paramA;
 		var veloY = paramB;
@@ -162,6 +190,7 @@ setLinearVelocity(paramA, paramB) {
 }
 
 extraUpdate(time, delta) {
+
 	this.angle = this.baseReferenceAngle;
 	this.x = this.baseReferenceX;
 	this.y = this.baseReferenceY;
@@ -169,6 +198,10 @@ extraUpdate(time, delta) {
 	this.angle += (delta / 1000) * this.angularVelocity;
 	this.x += (delta / 1000) * this.linearVelocityX;
 	this.y += (delta / 1000) * this.linearVelocityY;
+	
+	if (this.angle > 360) {
+		this.angle = 360 - this.angle;
+	}
 	
 	this.baseReferenceAngle = this.angle;
 	this.baseReferenceX = this.x;

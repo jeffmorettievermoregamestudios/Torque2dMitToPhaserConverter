@@ -12,6 +12,9 @@
 	t2dGetRandomMinMax : function(minNumVal, maxNumVal) {
 		var temp = Math.random() * ((maxNumVal - minNumVal) + 1);
 		return Math.floor(temp) + minNumVal;
+	},
+	
+	t2dStrLen : function(stringVal) {
+		return stringVal.length;
 	}
-
 }

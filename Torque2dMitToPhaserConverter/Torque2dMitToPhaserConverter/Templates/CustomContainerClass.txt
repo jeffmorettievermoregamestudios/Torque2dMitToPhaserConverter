@@ -1,19 +1,27 @@
-﻿class PhaserTextBaseClass extends Phaser.GameObjects.Text {
-
-constructor (scene, x, y, text, style)
+﻿class CustomContainerClass {
+	
+constructor (scene)
 {
-    super(scene, x, y, text, style);
+	this.list = new PhaserSimSetClass();
+	
+	this.x = -1000;
+	this.y = -1000;
+	this.angle = 0;
 	this.angularVelocity = 0;
 	this.linearVelocityX = 0;
 	this.linearVelocityY = 0;
-	this.containerOffsetX = undefined;
-	this.containerOffsetY = undefined;
-	this.containerOffsetAngle = 0;
-	this.baseReferenceX = 0;
-	this.baseReferenceY = 0;
-	this.baseReferenceAngle = 0;
-	scene.add.existing(this);
-	scene.phaserTextList.add(this);
+	
+	scene.containerList.add(this);
+}
+
+add(object)
+{
+	this.list.add(object);
+}
+
+remove(object)
+{
+	this.list.remove(object);
 }
 
 getPosition() {
@@ -22,36 +30,22 @@ getPosition() {
 }
 
 getPositionX() {
-	return MathConvertUtil.convertToT2dX(this.baseReferenceX);
+	return MathConvertUtil.convertToT2dX(this.x);
 }
 
 getPositionY() {
-	return MathConvertUtil.convertToT2dY(this.baseReferenceY);
+	return MathConvertUtil.convertToT2dY(this.y);
 }
 
 getAngle() {
-	return this.baseReferenceAngle - 90;
+	return this.angle - 90;
 }
 
+/*
 setSize(width, height) {
-	
-	if (height || height === 0)
-	{
-		super.setSize(MathConvertUtil.convertToPhaserWidth(width), MathConvertUtil.convertToPhaserHeight(height));
-	}
-	else
-	{
-		super.setSize(MathConvertUtil.convertToPhaserWidth(width), MathConvertUtil.convertToPhaserHeight(width));
-	}
-}
+	this.setDisplaySize(MathConvertUtil.convertToPhaserWidth(width), MathConvertUtil.convertToPhaserHeight(height));
+}*/
 
-setFontSize(size) {
-	super.setFontSize(MathConvertUtil.convertToPhaserFontSize(size));
-}
-
-// NOTE: Besides setting position, you can use the Phaser method setAlign([align]) to align your text
-// as either 'left', 'right', 'center', or 'justify'.  Note that this needs to be implemented manually in 
-// your output code
 setPosition(paramA, paramB) {
 	
 	// NOTE:  Sometimes this function will be called with one parameter, and this parameter will be a vector that we will
@@ -90,15 +84,15 @@ setPosition(paramA, paramB) {
 }
 
 setPositionX(x) {
-	this.baseReferenceX = MathConvertUtil.convertToPhaserX(x);
+	this.x = MathConvertUtil.convertToPhaserX(x);
 }
 
 setPositionY(y) {
-	this.baseReferenceY = MathConvertUtil.convertToPhaserY(y);
+	this.y = MathConvertUtil.convertToPhaserY(y);
 }
 
 setAngle(angleInDegrees) {
-	this.baseReferenceAngle = this.angle + 90;
+	super.setAngle(angleInDegrees + 90);
 }
 
 setAngularVelocity(angVelo) {
@@ -113,30 +107,6 @@ setLinearVelocityY(veloY) {
 	this.linearVelocityY = MathConvertUtil.convertToPhaserHeight(veloY) * -1;
 }
 
-setContainerOffsetAngle(offsetAngleInDegrees) {
-	this.containerOffsetAngle = offsetAngleInDegrees;
-}
-
-setContainerOffsetX(offsetX) {
-	
-	if (this.containerOffsetX === undefined)
-	{
-		this.baseReferenceX = this.baseReferenceX - MathConvertUtil.phaserProjectWidth / 2;
-	}
-	
-	this.containerOffsetX = offsetX;
-}
-
-setContainerOffsetY(offsetY) {
-	
-	if (this.containerOffsetY === undefined)
-	{
-		this.baseReferenceY = this.baseReferenceY - MathConvertUtil.phaserProjectHeight / 2;
-	}
-	
-	this.containerOffsetY = offsetY;
-}
-
 setLinearVelocity(paramA, paramB) {
 	
 	// NOTE:  Sometimes this function will be called with one parameter, and this parameter will be a vector that we will
@@ -144,7 +114,7 @@ setLinearVelocity(paramA, paramB) {
 	// thus being an input with an X component and a Y component.  Will check to see if second param is 'defined', and
 	// if it is, assume two params.  Otherwise, its one param (as a vector).
 	
-	if (paramB)
+	if (paramB || paramB === 0)
 	{
 		var veloX = paramA;
 		var veloY = paramB;
@@ -162,30 +132,19 @@ setLinearVelocity(paramA, paramB) {
 }
 
 extraUpdate(time, delta) {
-	this.angle = this.baseReferenceAngle;
-	this.x = this.baseReferenceX;
-	this.y = this.baseReferenceY;
-	
 	this.angle += (delta / 1000) * this.angularVelocity;
 	this.x += (delta / 1000) * this.linearVelocityX;
 	this.y += (delta / 1000) * this.linearVelocityY;
 	
-	this.baseReferenceAngle = this.angle;
-	this.baseReferenceX = this.x;
-	this.baseReferenceY = this.y;
-	
-	this.angle += this.containerOffsetAngle;
-	
-	if (this.containerOffsetX !== undefined)
+	for (var i = 0; i < this.list.getCount(); i++)
 	{
-		this.x += this.containerOffsetX;
+		var item = this.list.getObject(i);
+		
+		item.setContainerOffsetAngle(this.angle);
+		item.setContainerOffsetX(this.x);
+		item.setContainerOffsetY(this.y);
 	}
-	
-	if (this.containerOffsetY !== undefined)
-	{
-		this.y += this.containerOffsetY;
-	}
-	
 }
 
 }
+

@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractSyntaxTreeClasses\AddOperator.cs" />
+    <Compile Include="AbstractSyntaxTreeClasses\AudioAsset.cs" />
     <Compile Include="AbstractSyntaxTreeClasses\BasicCodeToken.cs" />
     <Compile Include="AbstractSyntaxTreeClasses\BitwiseAndOperator.cs" />
     <Compile Include="AbstractSyntaxTreeClasses\BitwiseComplementOperator.cs" />
@@ -152,6 +153,7 @@
     <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dAnimationAsset.cs" />
     <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dAsset.cs" />
     <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dAssetLibrary.cs" />
+    <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dAudioAsset.cs" />
     <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dFontAsset.cs" />
     <Compile Include="Torque2dScenes\Torque2dAssets\Torque2dImageAsset.cs" />
     <Compile Include="Torque2dScenes\Torque2dScene.cs" />
@@ -187,10 +189,16 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Templates\CustomContainerClass.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Templates\GeneralUtil.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Templates\MathConvertUtil.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\ParticleEmitterManagerBaseClass.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Templates\PhaserSimObjectClass.txt">
@@ -224,6 +232,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Templates\PhaserSimSetClass.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\CookiesUtil.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
